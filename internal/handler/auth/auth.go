@@ -26,10 +26,10 @@ func signupHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req authmodel.AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn("Invalid signup request body", err)
+		logger.Warn(server.ServerError.InvalidBody, err)
 		response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
 			Success: false,
-			Message: server.ServerError.InvalidBody,
+			Message: server.ServerError.BadRequest,
 		})
 		return
 	}
@@ -59,10 +59,10 @@ func signinHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req authmodel.AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn("Invalid signin request body", err)
+		logger.Warn(server.ServerError.InvalidBody, err)
 		response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
 			Success: false,
-			Message: server.ServerError.InvalidBody,
+			Message: server.ServerError.BadRequest,
 		})
 		return
 	}

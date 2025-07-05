@@ -8,14 +8,16 @@ type ServerErrorMessages struct {
 	InvalidBody     string
 	TooManyRequests string
 	HTTPServerError string
+	BadRequest      string
 }
 
 var ServerError = ServerErrorMessages{
-	MissingEnvVars:  "No .env file found. Server cannot start",
-	StartupFailed:   "Server startup failed",
-	ShutdownFailed:  "Server shutdown error",
-	InternalError:   "Internal server error",
-	InvalidBody:     "Invalid request body",
-	TooManyRequests:  "Too many requests",
+	MissingEnvVars:   "no .env file found. Server cannot start",
+	StartupFailed:    "server startup failed",
+	ShutdownFailed:   "server shutdown error",
+	InternalError:    "internal server error",
+	InvalidBody:      "invalid request body",
+	TooManyRequests:  "too many requests",
 	HTTPServerError:  "HTTP server error",
+	BadRequest: 	  "bad request",
 }

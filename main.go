@@ -24,7 +24,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 	logger.Error(server.ServerError.MissingEnvVars, err)
 	os.Exit(1)
-}
+	}
 
 	// Database Initialization
 	if err := db.Init(); err != nil {
