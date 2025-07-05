@@ -1,0 +1,56 @@
+# ─── Go build artifacts ───────────────────────────────
+/bin/
+/**/*.exe
+/**/*.dll
+/**/*.so
+/**/*.dylib
+
+# Go test & coverage files
+*.test
+*.out
+coverage.*
+
+# Output / distribution folders
+/build/
+/dist/
+
+# pkg directory (Go build cache)
+/pkg/
+
+# Go workspace file (VS Code)
+go.work
+
+# ─── Dependency management ────────────────────────────
+/vendor/
+
+# ─── IDE / Editor configs ─────────────────────────────
+# VS Code
+.vscode/
+
+# JetBrains IDEs (Goland, IntelliJ)
+.idea/
+
+# MacOS Finder files
+.DS_Store
+
+# Vim / Emacs / other swap files
+*.swp
+*~
+
+# ─── Environment & Secrets ────────────────────────────
+.env
+.env.*
+
+# ─── Logs & runtime data ──────────────────────────────
+*.log
+*.pid
+/tmp/
+
+# ─── Database dumps / migrations artifacts ───────────
+*.sql
+*.dump
+
+# ─── Docker artifacts ─────────────────────────────────
+**/Dockerfile.local
+**/docker-compose.*
+
