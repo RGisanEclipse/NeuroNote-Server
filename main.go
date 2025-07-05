@@ -15,7 +15,7 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware"	
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"	
 	
 )
 
@@ -37,7 +37,7 @@ func main() {
 
 	// Apply Rate Limiting Middleware
 	public := router.NewRoute().Subrouter()
-	public.Use(middleware.RateLimit)
+	public.Use(rate.RateLimit)
 	handler.RegisterRoutes(public)
 
 	// Setup Port and Server
