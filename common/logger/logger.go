@@ -10,6 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// public alias so callers can write logger.Fields{…} 
+type Fields = logrus.Fields
+
+
 var log = logrus.New()
 
 func init() {
@@ -21,20 +25,17 @@ func init() {
 	log.SetLevel(logrus.DebugLevel)
 }
 
-//────────────────────────────────────────────────────────────
-// captureStack returns a slice of frames starting *after*
-// this logger’s own functions (skip=3 is “just right”).
-//────────────────────────────────────────────────────────────
+// captureStack collects a trimmed stack trace (skips logger frames)
 func captureStack() []string {
 	const maxFrames = 32
 	pcs := make([]uintptr, maxFrames)
-	n := runtime.Callers(3, pcs) // skip 3 => callers above logger.Error
+	n := runtime.Callers(3, pcs) 
 	frames := runtime.CallersFrames(pcs[:n])
 
 	var out []string
 	for {
 		f, more := frames.Next()
-		if !strings.Contains(f.Function, "/common/logger") { // ignore logger frames
+		if !strings.Contains(f.Function, "/common/logger") { 
 			out = append(out, fmt.Sprintf("%s\n\t%s:%d", f.Function, f.File, f.Line))
 		}
 		if !more {
@@ -44,10 +45,9 @@ func captureStack() []string {
 	return out
 }
 
-//────────────────────────────────────────────────────────────
-// Public helpers
-//────────────────────────────────────────────────────────────
-func Info(msg string, fields ...logrus.Fields) {
+// helpers
+
+func Info(msg string, fields ...Fields) {
 	if len(fields) > 0 {
 		log.WithFields(fields[0]).Info(msg)
 	} else {
@@ -55,7 +55,7 @@ func Info(msg string, fields ...logrus.Fields) {
 	}
 }
 
-func Debug(msg string, fields ...logrus.Fields) {
+func Debug(msg string, fields ...Fields) {
 	if len(fields) > 0 {
 		log.WithFields(fields[0]).Debug(msg)
 	} else {
@@ -63,13 +63,14 @@ func Debug(msg string, fields ...logrus.Fields) {
 	}
 }
 
-func Warn(msg string, err error, fields ...logrus.Fields) {
+func Warn(msg string, err error, fields ...Fields) {
 	if err == nil {
-		err = errors.New(msg) // ensure non-nil
+		err = errors.New(msg) 
 	}
-	entry := log.WithFields(logrus.Fields{
+
+	entry := log.WithFields(Fields{
 		"error":    err.Error(),
-		"function": captureStack()[0], // first non-logger frame
+		"function": captureStack()[0],
 	})
 	if len(fields) > 0 {
 		entry = entry.WithFields(fields[0])
@@ -77,15 +78,18 @@ func Warn(msg string, err error, fields ...logrus.Fields) {
 	entry.Warn(msg)
 }
 
-func Error(msg string, err error, fields ...logrus.Fields) {
-	stack := captureStack() // full slice
+func Error(msg string, err error, fields ...Fields) {
+	var errStr string
+	if err != nil {
+		errStr = err.Error()
+	}
 
-	entry := log.WithFields(logrus.Fields{
-		"error":    err.Error(),
-		"function": stack[0], // top frame for quick glance
-		"stack":    stack,    // entire stack as JSON array
+	stack := captureStack()
+	entry := log.WithFields(Fields{
+		"error":    errStr,
+		"function": stack[0], 
+		"stack":    stack,    
 	})
-
 	if len(fields) > 0 {
 		entry = entry.WithFields(fields[0])
 	}
