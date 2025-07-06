@@ -8,10 +8,11 @@ on:
 
 jobs:
   test:
+    name: Go Tests Across Versions 
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['stable']  
+        go-version: ['stable']
 
     steps:
       - name: Checkout code
