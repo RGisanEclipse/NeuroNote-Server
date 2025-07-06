@@ -14,74 +14,70 @@ import (
 	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/auth"
 )
 
-// RegisterAuthRoutes wires up /signup and /signin endpoints
-func RegisterAuthRoutes(router *mux.Router) {
-	router.HandleFunc("/signup", signupHandler).Methods("POST")
-	router.HandleFunc("/signin", signinHandler).Methods("POST")
+func RegisterAuthRoutes(router *mux.Router, svc authservice.AuthService) {
+	router.HandleFunc("/signup", signupHandler(svc)).Methods("POST")
+	router.HandleFunc("/signin", signinHandler(svc)).Methods("POST")
 }
 
-// signupHandler handles user registration
-func signupHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 
-	var req authmodel.AuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(server.ServerError.InvalidBody, err)
-		response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
-			Success: false,
-			Message: server.ServerError.BadRequest,
+func signupHandler(svc authservice.AuthService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		var req authmodel.AuthRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Warn(server.ServerError.InvalidBody, err)
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
+				Success: false,
+				Message: server.ServerError.BadRequest,
+			})
+			return
+		}
+		token, err := svc.Signup(ctx, req.Email, req.Password)
+		if err != nil {
+			logger.Warn("Signup failed", err, logrus.Fields{"email": req.Email})
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
+			Success: true,
+			Message: "Account created successfully",
+			Token:   token,
 		})
-		return
 	}
-
-	token, err := authservice.Signup(ctx, req.Email, req.Password)
-	if err != nil {
-		logger.Warn("Signup failed", err, logrus.Fields{
-			"email": req.Email,
-		})
-		response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return
-	}
-
-	response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
-		Success: true,
-		Message: "Account created successfully",
-		Token:   token,
-	})
 }
 
-// signinHandler handles user login
-func signinHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func signinHandler(svc authservice.AuthService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 
-	var req authmodel.AuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.Warn(server.ServerError.InvalidBody, err)
-		response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
-			Success: false,
-			Message: server.ServerError.BadRequest,
+		var req authmodel.AuthRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Warn(server.ServerError.InvalidBody, err)
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
+				Success: false,
+				Message: server.ServerError.BadRequest,
+			})
+			return
+		}
+
+		token, err := svc.Signin(ctx, req.Email, req.Password)
+		if err != nil {
+			logger.Warn("Signin failed", err, logrus.Fields{"email": req.Email})
+			response.WriteJSON(w, http.StatusUnauthorized, authmodel.AuthResponse{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
+			Success: true,
+			Message: "Logged in successfully",
+			Token:   token,
 		})
-		return
 	}
-
-	token, err := authservice.Signin(ctx, req.Email, req.Password)
-	if err != nil {
-		logger.Warn("Signin failed", err, logrus.Fields{
-			"email": req.Email,
-		})
-		response.WriteJSON(w, http.StatusUnauthorized, authmodel.AuthResponse{
-			Success: false,
-			Message: err.Error(),
-		})
-		return
-	}
-
-	response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
-		Success: true,
-		Message: "Logged in successfully",
-		Token:   token,
-	})
 }

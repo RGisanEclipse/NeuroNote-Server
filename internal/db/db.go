@@ -43,3 +43,6 @@ func Init() error {
 
 	return err
 }
+func GetDB() *gorm.DB {
+	return common.DB
+}

@@ -16,6 +16,8 @@ import (
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"	
+	authsvc "github.com/RGisanEclipse/NeuroNote-Server/internal/service/auth"
+	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
 	
 )
 
@@ -32,13 +34,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Construct Repository & Service
+	userRepo := userrepo.NewGormRepo(db.GetDB()) 
+	authService := authsvc.New(userRepo)
 	// Setup Router
 	router := mux.NewRouter()
 
 	// Apply Rate Limiting Middleware
 	public := router.NewRoute().Subrouter()
 	public.Use(rate.RateLimit)
-	handler.RegisterRoutes(public)
+	handler.RegisterRoutes(public, authService)
 
 	// Setup Port and Server
 	port := os.Getenv("PORT")
