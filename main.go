@@ -16,6 +16,7 @@ import (
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"	
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authsvc "github.com/RGisanEclipse/NeuroNote-Server/internal/service/auth"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
 	
@@ -42,6 +43,7 @@ func main() {
 
 	// Apply Rate Limiting Middleware
 	public := router.NewRoute().Subrouter()
+	router.Use(request.Middleware)
 	public.Use(rate.RateLimit)
 	handler.RegisterRoutes(public, authService)
 

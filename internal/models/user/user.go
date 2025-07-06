@@ -8,3 +8,7 @@ type UserModel struct {
 	PasswordHash string    `gorm:"size:255;not null"`
 	CreatedAt    time.Time
 }
+
+func (UserModel) TableName() string {
+	return "users"
+}
