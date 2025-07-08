@@ -3,6 +3,7 @@ name: Go Tests Check
 on:
   pull_request:
     branches: [ main ]
+    types: [opened, edited, reopened, synchronize]
   push:
     branches: [ main ]
 
