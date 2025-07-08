@@ -1,0 +1,69 @@
+name: JIRA Ticket Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: [ main ]
+
+jobs:
+  jira-ticket-check:
+    name: JIRA Ticket Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract first word from PR title (JIRA ticket?)
+        id: extract
+        run: |
+          title="${{ github.event.pull_request.title }}"
+          ticket_id=$(echo "$title" | awk '{print $1}')
+          echo "Extracted JIRA Ticket ID: $ticket_id"
+          echo "ticket=$ticket_id" >> $GITHUB_OUTPUT
+
+      - name: Check if ticket exists in JIRA
+        id: verify
+        run: |
+          ticket="${{ steps.extract.outputs.ticket }}"
+          echo "🔍 Checking JIRA for ticket: $ticket"
+
+          # Debug info
+          echo "🔗 JIRA Base URL: ${{ secrets.JIRA_BASE_URL }}"
+          echo "👤 JIRA Email: ${{ secrets.JIRA_EMAIL }}"
+          api_url="${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/${ticket}"
+          echo "🌐 Final API endpoint: $api_url"
+
+          # Perform API call
+          response=$(curl -s -o response.json -w "%{http_code}" \
+            -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
+            -H "Accept: application/json" \
+            "$api_url")
+
+
+          # Decision logic
+          if [[ "$response" != "200" ]]; then
+            echo "❌ Ticket not found in JIRA"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Ticket exists in JIRA"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment if ticket doesn't exist
+        if: steps.verify.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const ticket = '${{ steps.extract.outputs.ticket }}';
+            const body = `❌ **JIRA Ticket Missing** Your PR title must begin with a valid JIRA ticket ID like: \`NENO-123: Add login screen\`. Ticket \`${ticket}\` was not found in JIRA. Please update the title to match this format before merging.`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+      - name: Fail if JIRA ticket is invalid
+        if: steps.verify.outputs.exists == 'false'
+        run: exit 1
