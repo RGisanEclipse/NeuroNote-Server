@@ -38,12 +38,13 @@ func main() {
 	// Construct Repository & Service
 	userRepo := userrepo.NewGormRepo(db.GetDB()) 
 	authService := authsvc.New(userRepo)
-	// Setup Router
+	
+	// Setup Router with request logging middleware
 	router := mux.NewRouter()
-
-	// Apply Rate Limiting Middleware
-	public := router.NewRoute().Subrouter()
 	router.Use(request.Middleware)
+
+	public := router.NewRoute().Subrouter()
+	// Apply Rate Limiting Middleware to public routes
 	public.Use(rate.RateLimit)
 	handler.RegisterRoutes(public, authService)
 

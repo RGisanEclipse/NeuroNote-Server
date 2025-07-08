@@ -14,7 +14,7 @@ func NewGormRepo(db *gorm.DB) Repository {
 	return &gormRepo{db}
 }
 
-// ── interface methods ───────────────────────────────────────
+// interface methods 
 
 func (r *gormRepo) UserExists(ctx context.Context, email string) (bool, error) {
 	var count int64
@@ -43,7 +43,7 @@ func (r *gormRepo) GetUserCreds(ctx context.Context, email string) (*Creds, erro
 		First(&u).Error
 
 	if err != nil {
-		return nil, err // gorm.ErrRecordNotFound bubbles up
+		return nil, err 
 	}
 	return &Creds{ID: u.ID, PasswordHash: u.PasswordHash}, nil
 }
