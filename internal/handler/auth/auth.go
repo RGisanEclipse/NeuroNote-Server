@@ -35,6 +35,10 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 			return
 		}
 		if err := req.Validate(); err != nil {
+			logger.Warn(server.ServerError.BadRequest, err, logrus.Fields{
+				"email": req.Email,
+				"requestId": reqID,
+			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.AuthResponse{
 				Success: false,
 				Message: err.Error(),
