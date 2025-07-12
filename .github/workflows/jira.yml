@@ -4,67 +4,107 @@ on:
   pull_request:
     branches: [ main ]
     types: [opened, edited, reopened, synchronize]
-  push:
-    branches: [ main ]
 
 jobs:
   jira-ticket-check:
-    if: github.event_name == 'pull_request'
-    name: JIRA Ticket Check
     runs-on: ubuntu-latest
+
     steps:
-      - name: Extract first word from PR title (JIRA ticket?)
-        id: extract
-        run: |
-          title="${{ github.event.pull_request.title }}"
-          ticket_id=$(echo "$title" | awk '{print $1}')
-          echo "Extracted JIRA Ticket ID: $ticket_id"
-          echo "ticket=$ticket_id" >> $GITHUB_OUTPUT
+    - name: Extract first word from PR title (JIRA ticket)
+      id: extract
+      run: |
+        title="${{ github.event.pull_request.title }}"
+        ticket_id=$(echo "$title" | awk '{print $1}')
+        echo "💡 Extracted ticket: $ticket_id"
+        echo "ticket=$ticket_id" >> "$GITHUB_OUTPUT"
 
-      - name: Check if ticket exists in JIRA
-        id: verify
-        run: |
-          ticket="${{ steps.extract.outputs.ticket }}"
-          echo "🔍 Checking JIRA for ticket: $ticket"
+    - name: Validate ticket in JIRA
+      id: verify
+      env:
+        JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}      # e.g. https://neuronote.atlassian.net
+        JIRA_EMAIL:     ${{ secrets.JIRA_EMAIL }}
+        JIRA_TOKEN:     ${{ secrets.JIRA_API_TOKEN }}
+      run: |
+        set -e
+        ticket=${{ steps.extract.outputs.ticket }}
+        if [[ -z "$ticket" ]]; then
+          echo "ticket_valid=false" >> "$GITHUB_OUTPUT"
+          echo "reason=No ticket ID found in title"   >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
 
-          # Debug info
-          echo "🔗 JIRA Base URL: ${{ secrets.JIRA_BASE_URL }}"
-          echo "👤 JIRA Email: ${{ secrets.JIRA_EMAIL }}"
-          api_url="${{ secrets.JIRA_BASE_URL }}/rest/api/3/issue/${ticket}"
-          echo "🌐 Final API endpoint: $api_url"
+        api_url="$JIRA_BASE_URL/rest/api/3/issue/$ticket"
+        echo "🔗 Querying full URL (for debug): $api_url"
 
-          # Perform API call
-          response=$(curl -s -o response.json -w "%{http_code}" \
-            -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
-            -H "Accept: application/json" \
-            "$api_url")
+        # Corrected curl command:
+        # -v sends verbose output to stderr (which GitHub Actions captures)
+        # -s silences progress meter
+        # -w "\n%{http_code}" prints HTTP code to stdout after body
+        # 2>/dev/stderr explicitly sends verbose output to stderr
+        http_code_and_body=$(curl -v -s -w "\n%{http_code}" \
+          -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+          -H "Accept: application/json" "$api_url" 2>/dev/stderr)
 
+        body=$(echo "$http_code_and_body" | head -n -1)
+        code=$(echo "$http_code_and_body" | tail -n1)
 
-          # Decision logic
-          if [[ "$response" != "200" ]]; then
-            echo "❌ Ticket not found in JIRA"
-            echo "exists=false" >> $GITHUB_OUTPUT
-          else
-            echo "✅ Ticket exists in JIRA"
-            echo "exists=true" >> $GITHUB_OUTPUT
-          fi
+        echo "--- Curl Response Body (parsed for jq) ---"
+        echo "$body"
+        echo "--- HTTP Code (parsed): $code ---"
 
-      - name: Comment if ticket doesn't exist
-        if: steps.verify.outputs.exists == 'false'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GH_TOKEN }}
-          script: |
-            const ticket = '${{ steps.extract.outputs.ticket }}';
-            const body = `❌ **JIRA Ticket Missing** Your PR title must begin with a valid JIRA ticket ID like: \`NENO-123: Add login screen\`. Ticket \`${ticket}\` was not found in JIRA. Please update the title to match this format before merging.`;
+        # Check for non-empty code to handle cases where curl fails completely
+        if [[ -z "$code" ]]; then
+          echo "ticket_valid=false"        >> "$GITHUB_OUTPUT"
+          echo "reason=Curl command failed to produce an HTTP code. Check JIRA_BASE_URL secret or connectivity."   >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
 
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
+        # If not 200 → ticket missing or API error
+        if [[ "$code" != "200" ]]; then
+          echo "ticket_valid=false"        >> "$GITHUB_OUTPUT"
+          echo "reason=Ticket not found or API error. HTTP Code: $code. Full response: $(echo "$body" | head -n 50 | tail -n +1)"   >> "$GITHUB_OUTPUT" # Limit body for comment
+          exit 0
+        fi
 
-      - name: Fail if JIRA ticket is invalid
-        if: steps.verify.outputs.exists == 'false'
-        run: exit 1
+        status=$(echo "$body" | jq -r '.fields.status.name')
+        echo "📋 Status: $status"
+
+        allowed_status=("To Do" "In Progress" "In Review" "Testing")
+        # Block if status is Done (or not in allowed list)
+        if [[ "$status" == "Done" ]]; then
+          echo "ticket_valid=false"        >> "$GITHUB_OUTPUT"
+          echo "reason=Status is Done"     >> "$GITHUB_OUTPUT"
+        elif [[ ! " ${allowed_status[*]} " =~ " $status " ]]; then
+          echo "ticket_valid=false"        >> "$GITHUB_OUTPUT"
+          echo "reason=Status $status not permitted" >> "$GITHUB_OUTPUT"
+        else
+          echo "ticket_valid=true"         >> "$GITHUB_OUTPUT"
+          echo "reason=OK"                 >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Comment on PR if ticket invalid
+      if: steps.verify.outputs.ticket_valid == 'false'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GH_TOKEN }}
+        script: |
+          const ticket = '${{ steps.extract.outputs.ticket }}' || '(none)';
+          const reason = '${{ steps.verify.outputs.reason }}';
+          const body = `❌ **JIRA Check Failed**
+
+          • Ticket: \`${ticket}\`
+          • Reason: ${reason}
+
+          Please ensure your PR title begins with a valid JIRA ID and that the issue is in an allowed state (not **Done**).`;
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body
+          });
+
+    - name: Fail if ticket invalid
+      if: steps.verify.outputs.ticket_valid == 'false'
+      run: |
+        echo "❌ JIRA validation failed – blocking merge."
+        exit 1
