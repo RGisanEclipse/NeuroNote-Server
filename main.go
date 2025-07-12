@@ -17,8 +17,7 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"	
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	authsvc "github.com/RGisanEclipse/NeuroNote-Server/internal/service/auth"
-	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service"
 	
 )
 
@@ -35,9 +34,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Construct Repository & Service
-	userRepo := userrepo.NewGormRepo(db.GetDB()) 
-	authService := authsvc.New(userRepo)
+	// Construct Service
+	services := service.New()
 	
 	// Setup Router with request logging middleware
 	router := mux.NewRouter()
@@ -46,7 +44,7 @@ func main() {
 	public := router.NewRoute().Subrouter()
 	// Apply Rate Limiting Middleware to public routes
 	public.Use(rate.RateLimit)
-	handler.RegisterRoutes(public, authService)
+	handler.RegisterRoutes(public, services)
 
 	// Setup Port and Server
 	port := os.Getenv("PORT")
