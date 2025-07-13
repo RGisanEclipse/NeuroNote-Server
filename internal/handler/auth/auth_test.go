@@ -15,6 +15,7 @@ import (
 
 	authhandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/auth"
 	authmodel   "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
+	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
 )
 
 // Mock service that satisfies authservice.Service
@@ -106,6 +107,268 @@ func TestSignupHandler_BadRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestSignupHandler_MissingEmail(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Password: "ValidPass@123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.EmailRequired, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_InvalidEmailFormat(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "invalidemail.com",
+		Password: "ValidPass@123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.InvalidEmail, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_MissingPassword(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email: "a@b.com",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordRequired, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+
+func TestSignupHandler_ShortPassword(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "123456",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordTooShort, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_LongPassword(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	longPass := "VeryLongPasswordWithAllComponents@12345678999999999999"
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: longPass,
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordTooLong, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_PasswordWithoutUppercase(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "lowercase@123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordMissingUppercase, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_PasswordWithoutLowercase(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "UPPERCASE@123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordMissingLowercase, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_PasswordWithoutDigit(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "Password@",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordMissingDigit, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_PasswordWithoutSpecialChar(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "Password123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	_ = json.NewDecoder(rec.Body).Decode(&resp)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordMissingSpecialCharacter, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
+func TestSignupHandler_PasswordWithWhitespace(t *testing.T) {
+	mockSvc := new(mockAuthService)
+	r := mux.NewRouter()
+	authhandler.RegisterAuthRoutes(r, mockSvc)
+
+	body, _ := json.Marshal(authmodel.AuthRequest{
+		Email:    "a@b.com",
+		Password: "Valid Pass@123",
+	})
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	r.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var resp authmodel.AuthResponse
+	err := json.NewDecoder(rec.Body).Decode(&resp)
+	assert.NoError(t, err)
+
+	assert.False(t, resp.Success)
+	assert.Equal(t, authErr.AuthError.PasswordContainsWhitespace, resp.Message)
+
+	mockSvc.AssertNotCalled(t, "Signup")
+}
+
 // Signin handler tests
 
 func TestSigninHandler_Success(t *testing.T) {
