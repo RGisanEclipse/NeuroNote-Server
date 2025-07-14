@@ -33,14 +33,14 @@ func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (string,
 // Signup handler tests
 func TestSignupHandler_Success(t *testing.T) {
 	mockSvc := new(mockAuthService)
-	mockSvc.On("Signup", mock.Anything, "test@example.com", "123456").
+	mockSvc.On("Signup", mock.Anything, "test@example.com", "validPass@1234").
 		Return("mock-token", nil)
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
 
 	body, _ := json.Marshal(authmodel.AuthRequest{
-		Email: "test@example.com", Password: "123456",
+		Email: "test@example.com", Password: "validPass@1234",
 	})
 	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -54,14 +54,14 @@ func TestSignupHandler_Success(t *testing.T) {
 
 func TestSignupHandler_EmailExists(t *testing.T) {
 	mockSvc := new(mockAuthService)
-	mockSvc.On("Signup", mock.Anything, "exists@example.com", "123456").
+	mockSvc.On("Signup", mock.Anything, "exists@example.com", "validPass@1234").
 		Return("", errors.New("email already exists"))
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
 
 	body, _ := json.Marshal(authmodel.AuthRequest{
-		Email: "exists@example.com", Password: "123456",
+		Email: "exists@example.com", Password: "validPass@1234",
 	})
 	req := httptest.NewRequest("POST", "/signup", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
