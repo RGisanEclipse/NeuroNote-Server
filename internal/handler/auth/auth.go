@@ -46,7 +46,7 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 			return
 		}
 		
-		token, err := svc.Signup(ctx, req.Email, req.Password)
+		userId, token, err := svc.Signup(ctx, req.Email, req.Password)
 		if err != nil {
 			logger.Warn("Signup failed", err, logrus.Fields{
 				"email": req.Email,
@@ -63,6 +63,7 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 			Success: true,
 			Message: "Account created successfully",
 			Token:   token,
+			UserId: userId,
 		})
 	}
 }
@@ -81,7 +82,7 @@ func signinHandler(svc authservice.AuthService) http.HandlerFunc {
 			return
 		}
 
-		token, err := svc.Signin(ctx, req.Email, req.Password)
+		userId, token, err := svc.Signin(ctx, req.Email, req.Password)
 		if err != nil {
 			logger.Warn("Signin failed", err, logrus.Fields{
 				"email": req.Email,
@@ -98,6 +99,7 @@ func signinHandler(svc authservice.AuthService) http.HandlerFunc {
 			Success: true,
 			Message: "Logged in successfully",
 			Token:   token,
+			UserId: userId,
 		})
 	}
 }

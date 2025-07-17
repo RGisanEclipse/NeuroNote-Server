@@ -21,13 +21,13 @@ func New(repo userrepo.Repository) *Service { return &Service{repo} }
 
 // Signup registers a new user and returns a JWT token.
 // It checks if the email is already taken, hashes the password, creates the user
-func (s *Service) Signup(ctx context.Context, email, password string) (string, error) {
+func (s *Service) Signup(ctx context.Context, email, password string) (uint, string, error) {
 
 	exists, err := s.repo.UserExists(ctx, email)
 	reqID := request.FromContext(ctx)
 	if err != nil {
 		logger.Error(dbErr.DBError.QueryFailed, err)
-		return "", err
+		return 0, "", err
 	}
 	if exists {
         logger.Info(
@@ -37,7 +37,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (string, e
         "requestId": reqID,
 			},
 		)
-		return "", errors.New(authErr.AuthError.EmailExists)
+		return 0, "", errors.New(authErr.AuthError.EmailExists)
 	}
 
 	hash, err := authutils.HashPassword(password)
@@ -45,7 +45,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (string, e
 		logger.Error(authErr.AuthError.PasswordHashingFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", errors.New(serverErr.ServerError.InternalError)
+		return 0, "", errors.New(serverErr.ServerError.InternalError)
 	}
 
 	userID, err := s.repo.CreateUser(ctx, email, hash)
@@ -53,7 +53,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (string, e
 		logger.Error(dbErr.DBError.QueryFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", err 
+		return 0, "", err 
 	}
 
 	token, err := authutils.GenerateToken(userID, email)
@@ -61,28 +61,29 @@ func (s *Service) Signup(ctx context.Context, email, password string) (string, e
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", errors.New(serverErr.ServerError.InternalError)
+		return 0, "", errors.New(serverErr.ServerError.InternalError)
 	}
-	return token, nil
+	return userID, token, nil
 }
 
 // Signin authenticates a user and returns a JWT token.
 // It checks if the user exists, verifies the password, and generates a token.    
-func (s *Service) Signin(ctx context.Context, email, password string) (string, error) {
+func (s *Service) Signin(ctx context.Context, email, password string) (uint, string, error) {
 	creds, err := s.repo.GetUserCreds(ctx, email)
+	userID := creds.ID
 	reqID := request.FromContext(ctx)
 	if err != nil {
 		logger.Error(authErr.AuthError.EmailDoesntExist, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", errors.New(authErr.AuthError.EmailDoesntExist)
+		return 0, "", errors.New(authErr.AuthError.EmailDoesntExist)
 	}
 
 	if !authutils.CheckPasswordHash(password, creds.PasswordHash) {
 		logger.Warn(authErr.AuthError.IncorrectPassword, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", errors.New(authErr.AuthError.IncorrectPassword)
+		return 0, "", errors.New(authErr.AuthError.IncorrectPassword)
 	}
 
 	token, err := authutils.GenerateToken(creds.ID, email)
@@ -90,7 +91,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (string, e
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return "", errors.New(serverErr.ServerError.InternalError)
+		return 0, "", errors.New(serverErr.ServerError.InternalError)
 	}
-	return token, nil
+	return userID, token, nil
 }
