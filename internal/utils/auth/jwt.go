@@ -9,14 +9,14 @@ import (
 )
 
 // GenerateJWT returns a signed JWT token with user ID and email
-func GenerateToken(userID uint, email string) (string, error) {
+func GenerateToken(userId uint, email string) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return "", fmt.Errorf("JWT_SECRET environment variable is not set")
 	}
 
 	claims := jwt.MapClaims{
-		"user_id": userID,
+		"user_id": userId,
 		"email":   email,
 		"exp": time.Now().AddDate(1, 0, 0).Unix(), // Expires in 1 year
 	}

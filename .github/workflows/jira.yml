@@ -2,7 +2,7 @@ name: JIRA Ticket Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
     types: [opened, edited, reopened, synchronize]
 
 jobs:

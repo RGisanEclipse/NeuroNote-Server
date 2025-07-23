@@ -21,20 +21,25 @@ import (
 // Mock service that satisfies authservice.Service
 type mockAuthService struct{ mock.Mock }
 
-func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (string, error) {
+func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.AuthResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(authmodel.AuthResponse), args.Error(1)
 }
-func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (string, error) {
+func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.AuthResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(authmodel.AuthResponse), args.Error(1)
 }
 
 // Signup handler tests
 func TestSignupHandler_Success(t *testing.T) {
 	mockSvc := new(mockAuthService)
 	mockSvc.On("Signup", mock.Anything, "test@example.com", "validPass@1234").
-		Return("mock-token", nil)
+		Return(authmodel.AuthResponse{
+			Success: true,
+			Message: "Account created succesfully",
+			Token: "random-jwt-token",
+			IsVerified: false,
+	},nil)
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
@@ -55,7 +60,10 @@ func TestSignupHandler_Success(t *testing.T) {
 func TestSignupHandler_EmailExists(t *testing.T) {
 	mockSvc := new(mockAuthService)
 	mockSvc.On("Signup", mock.Anything, "exists@example.com", "validPass@1234").
-		Return("", errors.New("email already exists"))
+		Return(authmodel.AuthResponse{
+			Success: false,
+			Message: authErr.AuthError.EmailExists,
+	}, errors.New(authErr.AuthError.EmailExists))
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
@@ -70,6 +78,12 @@ func TestSignupHandler_EmailExists(t *testing.T) {
 	r.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+	var res authmodel.AuthResponse
+	err := json.Unmarshal(rec.Body.Bytes(), &res)
+	assert.NoError(t, err)
+	assert.False(t, res.Success)
+	assert.Equal(t, authErr.AuthError.EmailExists, res.Message)
 	mockSvc.AssertExpectations(t)
 }
 
@@ -374,7 +388,12 @@ func TestSignupHandler_PasswordWithWhitespace(t *testing.T) {
 func TestSigninHandler_Success(t *testing.T) {
 	mockSvc := new(mockAuthService)
 	mockSvc.On("Signin", mock.Anything, "user@example.com", "123456").
-		Return("mock-token", nil)
+		Return(authmodel.AuthResponse{
+			Success: true,
+			Message: "Logged in successfully",
+			Token: "valid-jwt-token",
+			IsVerified: false,
+		}, nil)
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
@@ -395,7 +414,10 @@ func TestSigninHandler_Success(t *testing.T) {
 func TestSigninHandler_WrongPassword(t *testing.T) {
 	mockSvc := new(mockAuthService)
 	mockSvc.On("Signin", mock.Anything, "user@example.com", "wrong").
-		Return("", errors.New("incorrect password"))
+		Return(authmodel.AuthResponse{
+			Success: false,
+			Message: authErr.AuthError.IncorrectPassword,
+	}, errors.New(authErr.AuthError.IncorrectPassword))
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
@@ -410,13 +432,23 @@ func TestSigninHandler_WrongPassword(t *testing.T) {
 	r.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+
+	var res authmodel.AuthResponse
+	err := json.Unmarshal(rec.Body.Bytes(), &res)
+	assert.NoError(t, err)
+	assert.False(t, res.Success)
+	assert.Equal(t, authErr.AuthError.IncorrectPassword, res.Message)
+
 	mockSvc.AssertExpectations(t)
 }
 
 func TestSigninHandler_EmailDoesNotExist(t *testing.T) {
 	mockSvc := new(mockAuthService)
 	mockSvc.On("Signin", mock.Anything, "ghost@example.com", "123456").
-		Return("", errors.New("email doesn't exist"))
+		Return(authmodel.AuthResponse{
+			Success: false,
+			Message: authErr.AuthError.EmailDoesntExist,
+	}, errors.New(authErr.AuthError.EmailDoesntExist))
 
 	r := mux.NewRouter()
 	authhandler.RegisterAuthRoutes(r, mockSvc)
@@ -431,5 +463,12 @@ func TestSigninHandler_EmailDoesNotExist(t *testing.T) {
 	r.ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+
+	var res authmodel.AuthResponse
+	err := json.Unmarshal(rec.Body.Bytes(), &res)
+	assert.NoError(t, err)
+	assert.False(t, res.Success)
+	assert.Equal(t, authErr.AuthError.EmailDoesntExist, res.Message)
+
 	mockSvc.AssertExpectations(t)
 }
