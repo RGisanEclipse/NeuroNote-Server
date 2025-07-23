@@ -45,5 +45,16 @@ func (r *gormRepo) GetUserCreds(ctx context.Context, email string) (*Creds, erro
 	if err != nil {
 		return nil, err 
 	}
-	return &Creds{ID: u.ID, PasswordHash: u.PasswordHash}, nil
+	return &Creds{Id: u.ID, PasswordHash: u.PasswordHash}, nil
+}
+
+func (r *gormRepo) IsUserVerified(ctx context.Context, userId uint) (bool, error) {
+	var u user.UserModel
+	err := r.db.WithContext(ctx).
+		Select("is_verified").
+		First(&u, userId).Error
+	if err != nil {
+		return false, err
+	}
+	return u.IsVerified, nil
 }

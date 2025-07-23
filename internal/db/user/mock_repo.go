@@ -9,6 +9,7 @@ type MockRepo struct {
 	UserExistsFn   func(ctx context.Context, email string) (bool, error)
 	CreateUserFn   func(ctx context.Context, email, hash string) (uint, error)
 	GetUserCredsFn func(ctx context.Context, email string) (uint, string, error)
+	IsUserVerifiedFn func(ctx context.Context, userId uint) (bool, error)
 }
 
 func (m *MockRepo) UserExists(ctx context.Context, email string) (bool, error) {
@@ -21,4 +22,8 @@ func (m *MockRepo) CreateUser(ctx context.Context, email, hash string) (uint, er
 
 func (m *MockRepo) GetUserCreds(ctx context.Context, email string) (uint, string, error) {
 	return m.GetUserCredsFn(ctx, email)
+}
+
+func (m *MockRepo) IsUserVerified(ctx context.Context, userId uint) (bool, error) {
+	return m.IsUserVerifiedFn(ctx, userId)
 }
