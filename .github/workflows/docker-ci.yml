@@ -40,7 +40,7 @@ jobs:
       - name: Generate .env file from secrets
         run: |
           cat <<EOF > .env
-          DB_HOST=localhost
+          DB_HOST=postgres-test 
           DB_PORT=5432
           DB_USER=${{ secrets.POSTGRES_USER }}
           DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
