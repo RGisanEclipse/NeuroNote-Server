@@ -41,6 +41,12 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(request.Middleware)
 
+	// Health check endpoint
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	}).Methods("GET")
+
 	public := router.NewRoute().Subrouter()
 	// Apply Rate Limiting Middleware to public routes
 	public.Use(rate.RateLimit)
