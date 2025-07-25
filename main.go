@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
@@ -34,7 +35,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Construct Service
+	// Redis Initialization
+	redis.InitRedis()
+	if err := redis.RedisClient.Ping(context.Background()).Err(); err != nil {
+		logger.Error(dbErr.RedisError.ConnectionFailed, err)
+		os.Exit(1)
+	}
+	// Construct Services
 	services := service.New()
 	
 	// Setup Router with request logging middleware

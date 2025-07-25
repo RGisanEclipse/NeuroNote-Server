@@ -5,32 +5,17 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models"
 )
 
-var (
-	clients = make(map[string]*client) 
-	mu      sync.Mutex
-)
-
-// Cleanup
-func init() {
-	go func() {
-		for {
-			time.Sleep(time.Hour)
-			mu.Lock()
-			clients = make(map[string]*client) 
-			mu.Unlock()
-		}
-	}()
-}
+const rateLimitWindow = time.Minute
 
 func RateLimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,34 +23,40 @@ func RateLimit(next http.Handler) http.Handler {
 		if err != nil {
 			ip = r.RemoteAddr
 		}
+
 		route := r.URL.Path
 		limit, ok := routeLimits[route]
-		if !ok { // un-limited route
+		if !ok {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		key := ip + route
-
-		mu.Lock()
-		cl, exists := clients[key]
-		now := time.Now()
-
-		if !exists || now.Sub(cl.windowStart) >= time.Minute {
-			cl = &client{requests: 1, windowStart: now}
-			clients[key] = cl
+		var key string
+		if userID, ok := r.Context().Value("userID").(string); ok && userID != "" {
+			key = "rate:user:" + userID + ":" + route
 		} else {
-			cl.requests++
+			key = "rate:ip:" + ip + ":" + route
 		}
 
-		exceeded := cl.requests > limit
-		mu.Unlock()
+		count, err := redis.RedisClient.Incr(r.Context(), key).Result()
+		if err != nil {
+			logger.Error("RateLimit Redis INCR failed", err, nil)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
 
-		if exceeded {
+		if count == 1 {
+			_, err := redis.RedisClient.Expire(r.Context(), key, rateLimitWindow).Result()
+			if err != nil {
+				logger.Error(server.ServerError.TooManyRequests, err, nil)
+			}
+		}
+
+		if count > int64(limit) {
 			logger.Warn(
 				server.ServerError.TooManyRequests,
-				errors.New("rate limit exceeded"),
-				logrus.Fields{"ip": ip, "route": route},
+				errors.New(server.ServerError.TooManyRequests),
+				logrus.Fields{"ip": ip, "route": route, "key": key},
 			)
 
 			w.Header().Set("Content-Type", "application/json")

@@ -62,7 +62,8 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
 			Success: res.Success,
 			Message: res.Message,
-			Token:   res.Token,
+			AccessToken:   res.AccessToken,
+			RefreshToken: res.RefreshToken,
 			IsVerified: res.IsVerified,
 		})
 	}
@@ -98,7 +99,8 @@ func signinHandler(svc authservice.AuthService) http.HandlerFunc {
 		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
 			Success: res.Success,
 			Message: res.Message,
-			Token:   res.Token,
+			AccessToken:  res.AccessToken,
+			RefreshToken: res.RefreshToken,
 			IsVerified: res.IsVerified,
 		})
 	}

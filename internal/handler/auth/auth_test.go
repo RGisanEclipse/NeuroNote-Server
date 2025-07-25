@@ -37,7 +37,8 @@ func TestSignupHandler_Success(t *testing.T) {
 		Return(authmodel.AuthResponse{
 			Success: true,
 			Message: "Account created succesfully",
-			Token: "random-jwt-token",
+			AccessToken: "random-jwt-token",
+			RefreshToken: "random-refresh-token",
 			IsVerified: false,
 	},nil)
 
@@ -391,7 +392,8 @@ func TestSigninHandler_Success(t *testing.T) {
 		Return(authmodel.AuthResponse{
 			Success: true,
 			Message: "Logged in successfully",
-			Token: "valid-jwt-token",
+			AccessToken: "valid-jwt-token",
+			RefreshToken: "valid-refresh-token",
 			IsVerified: false,
 		}, nil)
 
