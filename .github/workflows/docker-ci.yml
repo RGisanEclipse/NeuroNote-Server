@@ -1,0 +1,89 @@
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        ports:
+          - 6543:5432
+        options: >-
+          --health-cmd "pg_isready -U $POSTGRES_USER"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate .env file from secrets
+        run: |
+          cat <<EOF > .env
+          DB_HOST=postgres
+          DB_PORT=5432    
+          DB_USER=${{ secrets.POSTGRES_USER }}
+          DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          DB_NAME=${{ secrets.POSTGRES_DB }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=8080
+          EOF
+
+      - name: Build Docker image
+        run: |
+          docker build -t neuronote-server .
+
+      - name: Run server container
+        run: |
+          docker run --env-file .env -d -p 8080:8080 --name neuronote-app neuronote-server
+
+      - name: Wait for services and app to be ready
+        run: |
+          while ! pg_isready -h postgres -p 5432 -U ${{ secrets.POSTGRES_USER }}; do
+            echo "Waiting for postgres service..."
+            sleep 2
+          done
+
+          ATTEMPTS=0
+          MAX_ATTEMPTS=15 
+          SUCCESS=false
+          while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            echo "Attempt $((ATTEMPTS+1)) to connect to neuronote-app..."
+
+            if curl --fail http://localhost:8080/health; then
+              echo "Health check successful!"
+              SUCCESS=true
+              break
+            elif curl --fail http://localhost:8080; then
+              echo "Base URL check successful!"
+              SUCCESS=true
+              break
+            fi
+            sleep 2
+            ATTEMPTS=$((ATTEMPTS+1))
+          done
+
+          if [ "$SUCCESS" = false ]; then
+            echo "Failed to connect to neuronote-app after $MAX_ATTEMPTS attempts."
+            exit 1
+          fi
