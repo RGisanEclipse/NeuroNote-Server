@@ -21,7 +21,7 @@ jobs:
     - name: Validate ticket in JIRA
       id: verify
       env:
-        JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}      # e.g. https://neuronote.atlassian.net
+        JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
         JIRA_EMAIL:     ${{ secrets.JIRA_EMAIL }}
         JIRA_TOKEN:     ${{ secrets.JIRA_API_TOKEN }}
       run: |

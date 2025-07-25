@@ -1,0 +1,96 @@
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U admin"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate .env file from secrets
+        run: |
+          cat <<EOF > .env
+          DB_HOST=postgres-test 
+          DB_PORT=5432
+          DB_USER=${{ secrets.POSTGRES_USER }}
+          DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          DB_NAME=${{ secrets.POSTGRES_DB }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=8080
+          EOF
+
+      - name: Build Docker image
+        run: |
+          docker build -t neuronote-server .
+
+      - name: Run server container (linked to postgres network)
+        run: |
+          docker network create neuronote-net
+          docker run -d --rm \
+            --name postgres-test \
+            --network neuronote-net \
+            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            postgres:16
+
+          # Wait for Postgres manually (inside the same network)
+          for i in {1..15}; do
+            if docker run --rm --network neuronote-net postgres:16 pg_isready -h postgres-test -U ${{ secrets.POSTGRES_USER }}; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Waiting for postgres-test to be ready..."
+            sleep 2
+          done
+
+          docker run -d --rm \
+            --name neuronote-app \
+            --network neuronote-net \
+            -p 8080:8080 \
+            --env-file .env \
+            neuronote-server
+
+      - name: Health check neuronote-app
+        run: |
+          for i in {1..15}; do
+            echo "Checking http://localhost:8080/health (attempt $i)..."
+            if curl --fail http://localhost:8080/health; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "App health check failed after multiple attempts."
+          exit 1
