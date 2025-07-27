@@ -11,15 +11,16 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"	
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/auth"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service"
-	
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public"
 )
 
 func main() {
@@ -42,11 +43,12 @@ func main() {
 		os.Exit(1)
 	}
 	// Construct Services
-	services := service.New()
-	
-	// Setup Router with request logging middleware
+	publicServices := public.New()
+	privateServices := private.New()
+	// Setup Router with request logging middleware and rate limiting
 	router := mux.NewRouter()
 	router.Use(request.Middleware)
+	router.Use(rate.RateLimit)
 
 	// Health check endpoint
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +56,13 @@ func main() {
 		w.Write([]byte("ok"))
 	}).Methods("GET")
 
+	// Register public routes with the handler
 	public := router.NewRoute().Subrouter()
-	// Apply Rate Limiting Middleware to public routes
-	public.Use(rate.RateLimit)
-	handler.RegisterRoutes(public, services)
+	handler.RegisterPublicRoutes(public, publicServices)
+
+	private := router.NewRoute().Subrouter()
+	private.Use(auth.AuthMiddleware) 
+	handler.RegisterPrivateRoutes(private, privateServices)
 
 	// Setup Port and Server
 	port := os.Getenv("PORT")

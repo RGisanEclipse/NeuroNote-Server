@@ -4,14 +4,14 @@ import "context"
 
 // Creds is a thin DTO returned by the repo
 type Creds struct {
-	Id           uint
+	Id           string
 	PasswordHash string
 }
 
 // Repository exposes the only methods the auth service needs.
 type Repository interface {
 	UserExists(ctx context.Context, email string) (bool, error)
-	CreateUser(ctx context.Context, email, passwordHash string) (uint, error)
+	CreateUser(ctx context.Context, email, passwordHash string) (string, error)
 	GetUserCreds(ctx context.Context, email string) (*Creds, error)
-	IsUserVerified(ctx context.Context, userId uint) (bool, error)
+	IsUserVerified(ctx context.Context, userId string) (bool, error)
 }

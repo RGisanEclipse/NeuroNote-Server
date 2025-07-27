@@ -12,7 +12,7 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
-	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/auth"
+	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
 )
 
 func RegisterAuthRoutes(router *mux.Router, svc authservice.AuthService) {

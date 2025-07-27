@@ -9,12 +9,12 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
 )
 type Claims struct {
-	UserID uint   `json:"user_id"`
+	UserID string   `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
 
-func GenerateTokenPair(userId uint, email string) (accessToken string, refreshToken string, err error) {
+func GenerateTokenPair(userId string, email string) (accessToken string, refreshToken string, err error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return "", "", errors.New(auth.JWTError.JWTSecretNotSet)

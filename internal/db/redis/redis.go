@@ -11,6 +11,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
+	typeErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/types"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/utils/types"
 )
 
 var RedisClient *redis.Client
@@ -66,21 +68,53 @@ func InitRedis() error {
 	return errors.New(db.RedisError.ConnectionFailed)
 }
 
-func (r *RedisRepo) SetRefreshToken(ctx context.Context, userID uint, token string, expiry time.Duration) error {
-	key := getRefreshTokenKey(userID)
+func (r *RedisRepo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
+	userId, err := types.ConvertStringToUint(userID)
+	if err != nil {
+		logger.Error(typeErr.TypeError.TypeCastingError, err, logger.Fields{"userID": userID})
+		return nil
+	}
+	key := getRefreshTokenKey(userId)
 	return r.client.Set(ctx, key, token, expiry).Err()
 }
 
-func (r *RedisRepo) GetRefreshToken(ctx context.Context, userID uint) (string, error) {
-	key := getRefreshTokenKey(userID)
+func (r *RedisRepo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
+	userId, err := types.ConvertStringToUint(userID)
+	if err != nil {
+		logger.Error(typeErr.TypeError.TypeCastingError, err, logger.Fields{"userID": userID})
+		return "", err
+	}
+	key := getRefreshTokenKey(userId)
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisRepo) DeleteRefreshToken(ctx context.Context, userID uint) error {
-	key := getRefreshTokenKey(userID)
+func (r *RedisRepo) DeleteRefreshToken(ctx context.Context, userID string) error {
+	userId, err := types.ConvertStringToUint(userID)
+	if err != nil {
+		logger.Error(typeErr.TypeError.TypeCastingError, err, logger.Fields{"userID": userID})
+		return err
+	}
+	key := getRefreshTokenKey(userId)
 	return r.client.Del(ctx, key).Err()
 }
 
 func getRefreshTokenKey(userID uint) string {
 	return fmt.Sprintf("refresh_token:%d", userID)
+}
+
+// OTPService Methods
+func (r *RedisRepo) SetOTP(ctx context.Context, key string, otp string, ttl time.Duration) error {
+	return r.client.Set(ctx, key, otp, ttl).Err()
+}
+
+func (r *RedisRepo) GetOTP(ctx context.Context, key string) (string, error) {
+	return r.client.Get(ctx, key).Result()
+}
+
+func (r *RedisRepo) DeleteOTP(ctx context.Context, key string) error {
+	return r.client.Del(ctx, key).Err()
+}
+
+func getOTPKey(identifier string) string {
+	return fmt.Sprintf("otp:%s", identifier)
 }
