@@ -108,7 +108,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		Message: "Account created successfully",
 		AccessToken:   accessToken,
 		RefreshToken: refreshToken,
-		IsVerified: true,
+		IsVerified: false,
 	}, nil
 }
 
@@ -187,5 +187,56 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		AccessToken: accessToken,
 		RefreshToken: refreshToken,
 		IsVerified: isVerified,
+	}, nil
+}
+
+func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenResponse, error) {
+	reqID := request.FromContext(ctx)
+
+	claims, err := authutils.VerifyAuthToken(refreshToken)
+	if err != nil {
+		logger.Warn(authErr.AuthError.InvalidRefreshToken, err, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
+	}
+
+	userId := claims.UserID
+	email := claims.Email
+	if userId == "" || email == "" {
+		logger.Error("Refresh token missing required claims", nil, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
+	}
+
+	storedToken, err := s.redisrepo.GetRefreshToken(ctx, userId)
+	if err != nil || storedToken != refreshToken {
+		logger.Warn(authErr.AuthError.RefreshTokenMismatch, err, logger.Fields{
+			"requestId":    reqID,
+			"storedToken":  storedToken,
+			"providedToken": refreshToken,
+		})
+		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.RefreshTokenMismatch)
+	}
+
+	newAccessToken, newRefreshToken, err := authutils.GenerateTokenPair(userId, email)
+	if err != nil {
+		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.RefreshTokenResponse{}, errors.New(serverErr.ServerError.InternalError)
+	}
+
+	if err := s.redisrepo.SetRefreshToken(ctx, userId, newRefreshToken, RefreshTokenExpiry); err != nil {
+		logger.Error(dbErr.RedisError.SetRefreshTokenFailed, err, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.RefreshTokenResponse{}, errors.New(serverErr.ServerError.InternalError)
+	}
+
+	return authModels.RefreshTokenResponse{
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
 	}, nil
 }

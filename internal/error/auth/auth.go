@@ -10,6 +10,8 @@ type AuthErrorMessages struct {
 	TokenInvalid           string
 	Unauthorized           string
 	UserNotFound           string
+	InvalidRefreshToken    string
+	RefreshTokenMismatch   string
 
 	// Email validation errors
 	EmailRequired                     string
@@ -36,6 +38,8 @@ var AuthError = AuthErrorMessages{
 	TokenInvalid:           "invalid token",
 	Unauthorized:           "unauthorized access",
 	UserNotFound:           "user not found",
+	InvalidRefreshToken:    "invalid refresh token",
+	RefreshTokenMismatch:   "refresh token does not match stored token",
 	
 	// Email validation messages
 	EmailRequired:                     "email is required",

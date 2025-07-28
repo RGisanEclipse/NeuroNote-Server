@@ -47,7 +47,7 @@ func GenerateTokenPair(userId string, email string) (accessToken string, refresh
 	return
 }
 
-func VerifyAccessToken(tokenString string) (*Claims, error) {
+func VerifyAuthToken(tokenString string) (*Claims, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		return nil, errors.New(auth.JWTError.JWTSecretNotSet)

@@ -30,6 +30,11 @@ func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmod
 	return args.Get(0).(authmodel.AuthResponse), args.Error(1)
 }
 
+func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string) (authmodel.RefreshTokenResponse, error) {
+	args := m.Called(ctx, refreshToken)
+	return args.Get(0).(authmodel.RefreshTokenResponse), args.Error(1)
+}
+
 // Signup handler tests
 func TestSignupHandler_Success(t *testing.T) {
 	mockSvc := new(mockAuthService)

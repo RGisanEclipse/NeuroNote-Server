@@ -25,7 +25,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := parts[1]
-		claims, err := auth.VerifyAccessToken(token)
+		claims, err := auth.VerifyAuthToken(token)
 		if err != nil {
 			logger.Warn("JWT verification failed", err, nil)
 			http.Error(w, server.ServerError.Unauthorized, http.StatusUnauthorized)
