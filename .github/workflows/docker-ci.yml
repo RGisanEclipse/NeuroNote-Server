@@ -58,6 +58,7 @@ jobs:
           REDIS_HOST=redis
           REDIS_PORT=6379
           JWT_SECRET=${{ secrets.JWT_SECRET }}
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
           PORT=8080
           EOF
 
