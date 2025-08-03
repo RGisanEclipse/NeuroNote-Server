@@ -36,7 +36,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 	if exists {
@@ -47,7 +46,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: authErr.AuthError.EmailExists,
-			IsVerified: false,
 		}, errors.New(authErr.AuthError.EmailExists)
 	}
 
@@ -59,7 +57,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 
@@ -71,7 +68,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 
@@ -84,7 +80,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 	
@@ -95,7 +90,6 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 
@@ -173,7 +167,6 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		return authModels.AuthResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
-			IsVerified: false,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
 
