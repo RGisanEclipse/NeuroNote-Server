@@ -5,6 +5,7 @@ type AuthErrorMessages struct {
 	EmailExists            string
 	IncorrectPassword      string
 	InvalidBody            string
+	UserIdGenerationFailed string
 	PasswordHashingFailed  string
 	TokenGenerationFailed  string
 	TokenInvalid           string
@@ -33,6 +34,7 @@ var AuthError = AuthErrorMessages{
 	EmailExists:            "email already exists",
 	IncorrectPassword:      "incorrect password",
 	InvalidBody:            "invalid request body",
+	UserIdGenerationFailed: "user ID generation failed",
 	PasswordHashingFailed:  "password hashing failed",
 	TokenGenerationFailed:  "token generation failed",
 	TokenInvalid:           "invalid token",

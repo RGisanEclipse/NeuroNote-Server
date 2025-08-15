@@ -59,14 +59,15 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
-
-	userId, err := s.userrepo.CreateUser(ctx, email, hash)
+	// Generate a unique user ID (e.g., UUID or similar)
+	userId := authutils.GenerateUserId()
+	success, err := s.userrepo.CreateUser(ctx, email, hash, userId)
 	if err != nil {
 		logger.Error(dbErr.DBError.QueryFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.AuthResponse{
-			Success: false,
+			Success: success,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
 	}
@@ -228,6 +229,11 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		return authModels.RefreshTokenResponse{}, errors.New(serverErr.ServerError.InternalError)
 	}
 
+	logger.Info("Refresh token generated successfully", logger.Fields{
+		"requestId": reqID,
+		"userId":    userId,
+	})
+	
 	return authModels.RefreshTokenResponse{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
