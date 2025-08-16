@@ -21,13 +21,13 @@ func requestOTPHandler(svc otpService.OTPService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		userID, ok := ctx.Value(user.UserIdKey).(string)
-		if !ok || userID == "" {
+		userId, ok := ctx.Value(user.UserIdKey).(string)
+		if !ok || userId == "" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		resp, err := svc.RequestOTP(ctx, userID)
+		resp, err := svc.RequestOTP(ctx, userId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError) 
 			return

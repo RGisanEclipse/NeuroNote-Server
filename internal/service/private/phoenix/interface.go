@@ -7,5 +7,5 @@ import (
 )
 
 type PhoenixService interface {
-	SendMail(ctx context.Context, userID string) (*phoenix.EmailTemplate, error)
+	SendMail(ctx context.Context, userId string, template phoenix.EmailTemplate) error
 }

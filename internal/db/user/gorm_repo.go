@@ -62,3 +62,16 @@ func (r *gormRepo) IsUserVerified(ctx context.Context, userId string) (bool, err
 	}
 	return u.IsVerified, nil
 }
+
+func (r *gormRepo) GetUserEmailById(ctx context.Context, userId string) (string, error) {
+	var u user.UserModel
+	err := r.db.WithContext(ctx).
+		Select("email").
+		Where("user_id = ?", userId).
+		First(&u).Error
+		
+	if err != nil {
+		return "", err
+	}
+	return u.Email, nil
+}

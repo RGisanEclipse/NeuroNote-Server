@@ -14,4 +14,5 @@ type Repository interface {
 	CreateUser(ctx context.Context, email, passwordHash, userId string) (bool, error)
 	GetUserCreds(ctx context.Context, email string) (*Creds, error)
 	IsUserVerified(ctx context.Context, userId string) (bool, error)
+	GetUserEmailById(ctx context.Context, userId string) (string, error)
 }

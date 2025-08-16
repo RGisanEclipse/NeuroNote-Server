@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"context"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
@@ -27,7 +28,7 @@ func NewBrevoClient() *BrevoClient {
 
 var baseURL = "https://api.brevo.com/v3/smtp/email"
 
-func (c *BrevoClient) SendEmail(request phoenix.BrevoRequest) (phoenix.PhoenixResponse, error) {
+func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoRequest) (phoenix.PhoenixResponse, error) {
 	bodyBytes, err := json.Marshal(request)
 	if err != nil {
 		logger.Error(serverErr.ServerError.JSONMarshalError, err)
@@ -37,7 +38,7 @@ func (c *BrevoClient) SendEmail(request phoenix.BrevoRequest) (phoenix.PhoenixRe
 		}, err
 	}
 
-	req, err := http.NewRequest("POST", baseURL, bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequestWithContext(ctx, "POST", baseURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		logger.Error(serverErr.ServerError.RequestCreationFailure, err)
 		return phoenix.PhoenixResponse{

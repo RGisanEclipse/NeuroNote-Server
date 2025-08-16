@@ -16,5 +16,4 @@ func RegisterPublicRoutes(router *mux.Router, services *public.PublicServices) {
 // RegisterPrivateRoutes registers all private routes for the application
 func RegisterPrivateRoutes(router *mux.Router, services *private.PrivateServices) {
 	otpHandler.RegisterOTPRoutes(router, services.OTP)
-	// Register routes using private service handlers
 }
