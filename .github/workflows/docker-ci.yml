@@ -66,20 +66,20 @@ jobs:
         run: |
           docker build -t neuronote-server .
 
-      - name: Run server container
+      - name: Run server container and wait for health
         run: |
           docker run -d --rm --name neuronote-app -p 8080:8080 --env-file .env neuronote-server
+          
+          echo "Waiting for server to start..."
+          sleep 5  # Add a short initial delay to give the server a chance to start.
 
-
-      - name: Health check neuronote-app
-        run: |
           for i in {1..15}; do
             echo "Checking http://localhost:8080/health (attempt $i)..."
             if curl --fail http://localhost:8080/health; then
               echo "App is healthy!"
               exit 0
             fi
-            sleep 2
+            sleep 4
           done
 
           echo "App health check failed after multiple attempts."
