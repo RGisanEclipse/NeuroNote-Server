@@ -34,10 +34,10 @@ func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice
 	}
 }
 
-func (s *Service) RequestOTP(ctx context.Context, userId string) (*models.OTPResponse, error) {
+func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string) (*models.OTPResponse, error) {
 	requestId := request.FromContext(ctx)
 	otp := otpUtils.GenerateOTP()
-	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute)
+	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute, purpose)
 	if err != nil {
 		logger.Error("Failed to set OTP in Redis", err, logger.Fields{
 			"userId": userId,
@@ -78,9 +78,9 @@ func (s *Service) RequestOTP(ctx context.Context, userId string) (*models.OTPRes
 	}, nil
 }
 
-func (s *Service) VerifyOTP(ctx context.Context, userID string, code string) (*models.OTPResponse, error) {
+func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, purpose string) (*models.OTPResponse, error) {
 	requestId := request.FromContext(ctx)
-	storedOTP, err := s.redisrepo.GetOTP(ctx, userID)
+	storedOTP, err := s.redisrepo.GetOTP(ctx, userID, purpose)
 	if err != nil {
 		logger.Error(dbErr.RedisError.GetOTPFailed, err, logger.Fields{
 			"userId": userID,
@@ -113,7 +113,7 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string) (*m
 		}, errors.New(otpErr.OTPError.InvalidOTP)
 	}
 
-	_ = s.redisrepo.DeleteOTP(ctx, userID)
+	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)
 
 	return &models.OTPResponse{
 		Success: true,

@@ -21,13 +21,13 @@ type MockOTPService struct {
 	mock.Mock
 }
 
-func (m *MockOTPService) RequestOTP(ctx context.Context, userId string) (*models.OTPResponse, error) {
-	args := m.Called(ctx, userId)
+func (m *MockOTPService) RequestOTP(ctx context.Context, userId string, purpose string) (*models.OTPResponse, error) {
+	args := m.Called(ctx, userId, purpose)
 	return args.Get(0).(*models.OTPResponse), args.Error(1)
 }
 
-func (m *MockOTPService) VerifyOTP(ctx context.Context, userID string, code string) (*models.OTPResponse, error) {
-	args := m.Called(ctx, userID, code)
+func (m *MockOTPService) VerifyOTP(ctx context.Context, userID string, code string, purpose string) (*models.OTPResponse, error) {
+	args := m.Called(ctx, userID, code, purpose)
 	return args.Get(0).(*models.OTPResponse), args.Error(1)
 }
 
@@ -38,6 +38,7 @@ func TestRequestOTPHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		userId         string
+		requestBody    interface{}
 		serviceResponse *models.OTPResponse
 		serviceError   error
 		expectedStatus int
@@ -46,6 +47,7 @@ func TestRequestOTPHandler(t *testing.T) {
 		{
 			name:           "Success",
 			userId:         "test-user-id",
+			requestBody:    models.OTPRequest{Purpose: "signup"},
 			serviceResponse: &models.OTPResponse{Success: true, Message: "OTP sent successfully"},
 			serviceError:   nil,
 			expectedStatus: http.StatusOK,
@@ -54,6 +56,7 @@ func TestRequestOTPHandler(t *testing.T) {
 		{
 			name:           "Unauthorized - Missing User ID",
 			userId:         "",
+			requestBody:    models.OTPRequest{Purpose: "signup"},
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusUnauthorized,
@@ -62,24 +65,56 @@ func TestRequestOTPHandler(t *testing.T) {
 		{
 			name:           "Service Error",
 			userId:         "test-user-id",
+			requestBody:    models.OTPRequest{Purpose: "signup"},
 			serviceResponse: &models.OTPResponse{Success: false, Message: "Internal Server Error"},
 			serviceError:   errors.New("internal server error"),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   "internal server error\n",
 		},
+		{
+			name:           "Invalid Request Body",
+			userId:         "test-user-id",
+			requestBody:    "invalid json",
+			serviceResponse: nil,
+			serviceError:   nil,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "invalid request\n",
+		},
+		{
+			name:           "Invalid Purpose",
+			userId:         "test-user-id",
+			requestBody:    models.OTPRequest{Purpose: "invalid purpose"},
+			serviceResponse: nil,
+			serviceError:   nil,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "invalid purpose\n",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("POST", "/auth/otp/request", nil)
+			var reqBody io.Reader
+			if tt.requestBody != nil {
+				if s, ok := tt.requestBody.(string); ok {
+					reqBody = bytes.NewBufferString(s)
+				} else {
+					jsonBody, _ := json.Marshal(tt.requestBody)
+					reqBody = bytes.NewBuffer(jsonBody)
+				}
+			}
+			req, _ := http.NewRequest("POST", "/auth/otp/request", reqBody)
 			if tt.userId != "" {
 				ctx := context.WithValue(req.Context(), user.UserIdKey, tt.userId)
 				req = req.WithContext(ctx)
 			}
 			rr := httptest.NewRecorder()
 
-			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" {
-				mockService.On("RequestOTP", mock.Anything, tt.userId).Return(tt.serviceResponse, tt.serviceError).Once()
+			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Invalid Purpose" {
+				purpose := ""
+				if reqModel, ok := tt.requestBody.(models.OTPRequest); ok {
+					purpose = reqModel.Purpose
+				}
+				mockService.On("RequestOTP", mock.Anything, tt.userId, purpose).Return(tt.serviceResponse, tt.serviceError).Once()
 			}
 
 			handler.ServeHTTP(rr, req)
@@ -94,7 +129,7 @@ func TestRequestOTPHandler(t *testing.T) {
 				assert.Equal(t, tt.expectedBody, rr.Body.String())
 			}
 
-			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" {
+			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Invalid Purpose" {
 				mockService.AssertExpectations(t)
 			}
 		})
@@ -117,7 +152,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 		{
 			name:           "Success",
 			userId:         "test-user-id",
-			requestBody:    models.OTPVerifyRequest{OTP: "123456"},
+			requestBody:    models.OTPVerifyRequest{OTP: "123456", Purpose: "signup"},
 			serviceResponse: &models.OTPResponse{Success: true, Message: "OTP verified successfully"},
 			serviceError:   nil,
 			expectedStatus: http.StatusOK,
@@ -126,7 +161,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 		{
 			name:           "Unauthorized - Missing User ID",
 			userId:         "",
-			requestBody:    models.OTPVerifyRequest{OTP: "123456"},
+			requestBody:    models.OTPVerifyRequest{OTP: "123456", Purpose: "signup"},
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusUnauthorized,
@@ -153,7 +188,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 		{
 			name:           "Service Error - Invalid OTP",
 			userId:         "test-user-id",
-			requestBody:    models.OTPVerifyRequest{OTP: "654321"},
+			requestBody:    models.OTPVerifyRequest{OTP: "654321", Purpose: "signup"},
 			serviceResponse: &models.OTPResponse{Success: false, Message: "Invalid OTP"},
 			serviceError:   errors.New("Invalid OTP"),
 			expectedStatus: http.StatusUnauthorized,
@@ -162,11 +197,20 @@ func TestVerifyOTPHandler(t *testing.T) {
 		{
 			name:           "Service Error - Internal",
 			userId:         "test-user-id",
-			requestBody:    models.OTPVerifyRequest{OTP: "123456"},
+			requestBody:    models.OTPVerifyRequest{OTP: "123456", Purpose: "signup"},
 			serviceResponse: &models.OTPResponse{Success: false, Message: "Internal Server Error"},
 			serviceError:   errors.New("internal server error"),
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody:   "internal server error\n",
+		},
+		{
+			name:           "Invalid Purpose",
+			userId:         "test-user-id",
+			requestBody:    models.OTPVerifyRequest{OTP: "123456", Purpose: "invalid purpose"},
+			serviceResponse: &models.OTPResponse{Success: false, Message: "invalid purpose"},
+			serviceError:   errors.New("invalid purpose"),
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "invalid purpose\n",
 		},
 	}
 
@@ -189,12 +233,14 @@ func TestVerifyOTPHandler(t *testing.T) {
 			}
 			rr := httptest.NewRecorder()
 
-			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Missing OTP Code" {
+			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Missing OTP Code" && tt.name != "Invalid Purpose" {
 				otpCode := ""
+				purpose := ""
 				if reqModel, ok := tt.requestBody.(models.OTPVerifyRequest); ok {
 					otpCode = reqModel.OTP
+					purpose = reqModel.Purpose
 				}
-				mockService.On("VerifyOTP", mock.Anything, tt.userId, otpCode).Return(tt.serviceResponse, tt.serviceError).Once()
+				mockService.On("VerifyOTP", mock.Anything, tt.userId, otpCode, purpose).Return(tt.serviceResponse, tt.serviceError).Once()
 			}
 
 			handler.ServeHTTP(rr, req)
@@ -209,7 +255,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 				assert.Equal(t, tt.expectedBody, rr.Body.String())
 			}
 
-			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Missing OTP Code" {
+			if tt.userId != "" && tt.name != "Unauthorized - Missing User ID" && tt.name != "Invalid Request Body" && tt.name != "Missing OTP Code" && tt.name != "Invalid Purpose" {
 				mockService.AssertExpectations(t)
 			}
 		})

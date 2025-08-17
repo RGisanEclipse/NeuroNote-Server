@@ -7,6 +7,6 @@ import (
 )
 
 type OTPService interface {
-	RequestOTP(ctx context.Context, userID string) (*otp.OTPResponse, error)
-	VerifyOTP(ctx context.Context, userID string, code string) (*otp.OTPResponse, error)
+	RequestOTP(ctx context.Context, userID string, purpose string) (*otp.OTPResponse, error)
+	VerifyOTP(ctx context.Context, userID string, code string, purpose string) (*otp.OTPResponse, error)
 }

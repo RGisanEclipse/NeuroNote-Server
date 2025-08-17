@@ -86,21 +86,21 @@ func getRefreshTokenKey(userID string) string {
 }
 
 // OTPService Methods
-func (r *RedisRepo) SetOTP(ctx context.Context, userId string, otp string, ttl time.Duration) error {
-	key := getOTPKey(userId)
+func (r *RedisRepo) SetOTP(ctx context.Context, userId string, otp string, ttl time.Duration, purpose string) error {
+	key := getOTPKey(userId, purpose)
 	return r.client.Set(ctx, key, otp, ttl).Err()
 }
 
-func (r *RedisRepo) GetOTP(ctx context.Context, userId string) (string, error) {
-	key := getOTPKey(userId)
+func (r *RedisRepo) GetOTP(ctx context.Context, userId string, purpose string) (string, error) {
+	key := getOTPKey(userId, purpose)
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisRepo) DeleteOTP(ctx context.Context, userId string) error {
-	key := getOTPKey(userId)
+func (r *RedisRepo) DeleteOTP(ctx context.Context, userId string, purpose string) error {
+	key := getOTPKey(userId, purpose)
 	return r.client.Del(ctx, key).Err()
 }
 
-func getOTPKey(userID string) string {
-	return fmt.Sprintf("otp:%s", userID)
+func getOTPKey(userID string, purpose string) string {
+	return fmt.Sprintf("otp:%s:%s", userID, purpose)
 }

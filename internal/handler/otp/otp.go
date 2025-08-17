@@ -27,9 +27,19 @@ func requestOTPHandler(svc otpService.OTPService) http.HandlerFunc {
 			return
 		}
 
-		resp, err := svc.RequestOTP(ctx, userId)
+		var req models.OTPRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid request", http.StatusBadRequest)
+			return
+		}
+		if !otpService.IsValidPurpose(req.Purpose) {
+			http.Error(w, "invalid purpose", http.StatusBadRequest)
+			return
+		}
+
+		resp, err := svc.RequestOTP(ctx, userId, req.Purpose)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError) 
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		response.WriteJSON(w, http.StatusOK, resp)
@@ -55,10 +65,14 @@ func verifyOTPHandler(svc otpService.OTPService) http.HandlerFunc {
 			http.Error(w, "code is required", http.StatusBadRequest)
 			return
 		}
+		if !otpService.IsValidPurpose(req.Purpose) {
+			http.Error(w, "invalid purpose", http.StatusBadRequest)
+			return
+		}
 
-		resp, err := svc.VerifyOTP(ctx, userId, req.OTP)
+		resp, err := svc.VerifyOTP(ctx, userId, req.OTP, req.Purpose)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized) 
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
