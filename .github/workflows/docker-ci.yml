@@ -68,11 +68,18 @@ jobs:
 
       - name: Run server container and wait for health
         run: |
+          for i in {1..15}; do
+            docker inspect --format='{{.State.Health.Status}}' postgres | grep "healthy" > /dev/null && break || sleep 2;
+          done
+
+          for i in {1..15}; do
+            docker inspect --format='{{.State.Health.Status}}' redis | grep "healthy" > /dev/null && break || sleep 2;
+          done
           docker run -d --rm --name neuronote-app -p 8080:8080 --env-file .env neuronote-server
           
           echo "Waiting for server to start..."
-          sleep 5  # Add a short initial delay to give the server a chance to start.
-
+          sleep 5
+          
           for i in {1..15}; do
             echo "Checking http://localhost:8080/health (attempt $i)..."
             if curl --fail http://localhost:8080/health; then
@@ -81,6 +88,5 @@ jobs:
             fi
             sleep 4
           done
-
           echo "App health check failed after multiple attempts."
           exit 1
