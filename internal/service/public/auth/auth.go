@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-    redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
+	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-    dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
-	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
+	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 )
 
 type Service struct {
@@ -97,6 +97,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 	logger.Info("Account created successfully", logger.Fields{
 		"email":     email,
 		"requestId": reqID,
+		"userId":    userId,
 	})
 	return authModels.AuthResponse{
 		Success: true,
@@ -174,6 +175,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 	logger.Info("User logged in successfully", logger.Fields{
 		"email":     email,
 		"requestId": reqID,
+		"userId":    userId,
 	})
 	return authModels.AuthResponse{
 		Success:    true,
@@ -214,6 +216,16 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.RefreshTokenMismatch)
 	}
 
+	// Immediately delete the used refresh token to prevent reuse
+	if err := s.redisrepo.DeleteRefreshToken(ctx, userId); err != nil {
+		logger.Error("Failed to delete used refresh token", err, logger.Fields{
+			"requestId": reqID,
+			"userId":    userId,
+		})
+		// Don't fail the request if we can't delete the token, just log it
+		// The token will eventually expire anyway
+	}
+
 	newAccessToken, newRefreshToken, err := authutils.GenerateTokenPair(userId, email)
 	if err != nil {
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
@@ -232,6 +244,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 	logger.Info("Refresh token generated successfully", logger.Fields{
 		"requestId": reqID,
 		"userId":    userId,
+		"oldTokenExpiry": claims.ExpiresAt.Time,
 	})
 	
 	return authModels.RefreshTokenResponse{

@@ -124,12 +124,11 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 				"requestId": requestId,
 				"message": "Failed to mark the user verified in db",
 			})
+			return &models.OTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.InternalError,
+			}, errors.New(serverErr.ServerError.InternalError)
 		}
-		return &models.OTPResponse{
-			Success: false,
-			Message: serverErr.ServerError.InternalError,
-		}, errors.New(serverErr.ServerError.InternalError)
-		
 	}
 
 	return &models.OTPResponse{
