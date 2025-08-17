@@ -67,12 +67,9 @@ jobs:
           docker build -t neuronote-server .
 
       - name: Run server container
-        run:
-          docker run -d --rm \
-            --name neuronote-app \
-            -p 8080:8080 \
-            --env-file .env \
-            neuronote-server
+        run: |
+          docker run -d --rm --name neuronote-app -p 8080:8080 --env-file .env neuronote-server
+
 
       - name: Health check neuronote-app
         run: |
