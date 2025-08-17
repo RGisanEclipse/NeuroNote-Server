@@ -5,19 +5,20 @@ import (
 	"errors"
 	"time"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	"github.com/sirupsen/logrus"
 
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	models "github.com/RGisanEclipse/NeuroNote-Server/internal/models/otp"
-	emailtemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates"
-	otpUtils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/otp"
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
 	phoenixErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/phoenix"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
+	models "github.com/RGisanEclipse/NeuroNote-Server/internal/models/otp"
+	emailtemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates"
 	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
+	otpUtils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/otp"
 )
 
 type Service struct {
@@ -114,6 +115,22 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 	}
 
 	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)
+
+	if purpose == string(OTPPurposeSignup){
+		err = s.userrepo.MarkUserVerified(ctx, userID)
+		if err != nil{
+			logger.Error(dbErr.DBError.UpdateFailed, err, logrus.Fields{
+				"userId": userID,
+				"requestId": requestId,
+				"message": "Failed to mark the user verified in db",
+			})
+		}
+		return &models.OTPResponse{
+			Success: false,
+			Message: serverErr.ServerError.InternalError,
+		}, errors.New(serverErr.ServerError.InternalError)
+		
+	}
 
 	return &models.OTPResponse{
 		Success: true,

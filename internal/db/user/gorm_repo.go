@@ -75,3 +75,10 @@ func (r *gormRepo) GetUserEmailById(ctx context.Context, userId string) (string,
 	}
 	return u.Email, nil
 }
+
+func (r *gormRepo) MarkUserVerified(ctx context.Context, userId string) error {
+	return r.db.WithContext(ctx).
+		Model(&user.UserModel{}).
+		Where("user_id = ?", userId).
+		Update("is_verified", true).Error
+}

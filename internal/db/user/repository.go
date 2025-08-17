@@ -15,4 +15,5 @@ type Repository interface {
 	GetUserCreds(ctx context.Context, email string) (*Creds, error)
 	IsUserVerified(ctx context.Context, userId string) (bool, error)
 	GetUserEmailById(ctx context.Context, userId string) (string, error)
+	MarkUserVerified(ctx context.Context, userId string) error
 }
