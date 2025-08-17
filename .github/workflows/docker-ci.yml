@@ -68,17 +68,24 @@ jobs:
 
       - name: Run server container and wait for health
         run: |
-          docker run -d --rm --name neuronote-app -p 8080:8080 --env-file .env neuronote-server
+          network=$(docker network ls --filter name=github_network --format "{{.Name}}" | head -n 1)
+          
+          docker run -d --rm \
+            --name neuronote-app \
+            --network $network \
+            -p 8080:8080 \
+            --env-file .env \
+            neuronote-server
           
           sleep 5
           
           for i in {1..15}; do
-          echo "Checking http://localhost:8080/health (attempt $i)..."
-          if curl --fail http://localhost:8080/health; then
-            echo "App is healthy!"
-            exit 0
-          fi
-          sleep 4
+            echo "Checking http://localhost:8080/health (attempt $i)..."
+            if curl --fail http://localhost:8080/health; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            sleep 4
           done
           echo "App health check failed after multiple attempts."
           exit 1
