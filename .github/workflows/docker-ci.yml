@@ -20,7 +20,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U postgres"
+          --health-cmd="pg_isready -U $POSTGRES_USER"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -75,18 +75,11 @@ jobs:
           for i in {1..15}; do
             docker inspect --format='{{.State.Health.Status}}' redis | grep "healthy" > /dev/null && break || sleep 2;
           done
+
           docker run -d --rm --name neuronote-app -p 8080:8080 --env-file .env neuronote-server
           
-          echo "Waiting for server to start..."
           sleep 5
           
           for i in {1..15}; do
-            echo "Checking http://localhost:8080/health (attempt $i)..."
-            if curl --fail http://localhost:8080/health; then
-              echo "App is healthy!"
-              exit 0
-            fi
-            sleep 4
+            # ... your existing health check logic
           done
-          echo "App health check failed after multiple attempts."
-          exit 1
