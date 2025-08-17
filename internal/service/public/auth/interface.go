@@ -1,4 +1,3 @@
-// internal/service/auth/service.go
 package auth
 
 import (
@@ -9,4 +8,5 @@ import (
 type AuthService interface {
 	Signup(ctx context.Context, email, password string) (auth.AuthResponse, error)
 	Signin(ctx context.Context, email, password string) (auth.AuthResponse, error)
+	RefreshToken (ctx context.Context, refreshToken string) (auth.RefreshTokenResponse, error)
 }

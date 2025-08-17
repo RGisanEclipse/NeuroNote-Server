@@ -20,9 +20,19 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U admin"
+          --health-cmd="pg_isready -U $POSTGRES_USER"
           --health-interval=10s
           --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
           --health-retries=5
 
     steps:
@@ -40,12 +50,15 @@ jobs:
       - name: Generate .env file from secrets
         run: |
           cat <<EOF > .env
-          DB_HOST=postgres-test 
+          DB_HOST=postgres
           DB_PORT=5432
           DB_USER=${{ secrets.POSTGRES_USER }}
           DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           DB_NAME=${{ secrets.POSTGRES_DB }}
+          REDIS_HOST=redis
+          REDIS_PORT=6379
           JWT_SECRET=${{ secrets.JWT_SECRET }}
+          BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
           PORT=8080
           EOF
 
@@ -53,44 +66,26 @@ jobs:
         run: |
           docker build -t neuronote-server .
 
-      - name: Run server container (linked to postgres network)
+      - name: Run server container and wait for health
         run: |
-          docker network create neuronote-net
-          docker run -d --rm \
-            --name postgres-test \
-            --network neuronote-net \
-            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-            postgres:16
-
-          # Wait for Postgres manually (inside the same network)
-          for i in {1..15}; do
-            if docker run --rm --network neuronote-net postgres:16 pg_isready -h postgres-test -U ${{ secrets.POSTGRES_USER }}; then
-              echo "Postgres is ready!"
-              break
-            fi
-            echo "Waiting for postgres-test to be ready..."
-            sleep 2
-          done
-
+          network=$(docker network ls --filter name=github_network --format "{{.Name}}" | head -n 1)
+          
           docker run -d --rm \
             --name neuronote-app \
-            --network neuronote-net \
+            --network $network \
             -p 8080:8080 \
             --env-file .env \
             neuronote-server
-
-      - name: Health check neuronote-app
-        run: |
+          
+          sleep 5
+          
           for i in {1..15}; do
             echo "Checking http://localhost:8080/health (attempt $i)..."
             if curl --fail http://localhost:8080/health; then
               echo "App is healthy!"
               exit 0
             fi
-            sleep 2
+            sleep 4
           done
-
           echo "App health check failed after multiple attempts."
           exit 1

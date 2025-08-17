@@ -5,11 +5,14 @@ type AuthErrorMessages struct {
 	EmailExists            string
 	IncorrectPassword      string
 	InvalidBody            string
+	UserIdGenerationFailed string
 	PasswordHashingFailed  string
 	TokenGenerationFailed  string
 	TokenInvalid           string
 	Unauthorized           string
 	UserNotFound           string
+	InvalidRefreshToken    string
+	RefreshTokenMismatch   string
 
 	// Email validation errors
 	EmailRequired                     string
@@ -31,11 +34,14 @@ var AuthError = AuthErrorMessages{
 	EmailExists:            "email already exists",
 	IncorrectPassword:      "incorrect password",
 	InvalidBody:            "invalid request body",
+	UserIdGenerationFailed: "user ID generation failed",
 	PasswordHashingFailed:  "password hashing failed",
 	TokenGenerationFailed:  "token generation failed",
 	TokenInvalid:           "invalid token",
 	Unauthorized:           "unauthorized access",
 	UserNotFound:           "user not found",
+	InvalidRefreshToken:    "invalid refresh token",
+	RefreshTokenMismatch:   "refresh token does not match stored token",
 	
 	// Email validation messages
 	EmailRequired:                     "email is required",
