@@ -222,8 +222,6 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 			"requestId": reqID,
 			"userId":    userId,
 		})
-		// Don't fail the request if we can't delete the token, just log it
-		// The token will eventually expire anyway
 	}
 
 	newAccessToken, newRefreshToken, err := authutils.GenerateTokenPair(userId, email)
