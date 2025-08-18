@@ -1,6 +1,6 @@
 package auth
 
 type RefreshTokenResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
 }

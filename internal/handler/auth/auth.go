@@ -63,9 +63,7 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 			"email": req.Email,
 			"requestId": reqID,
 			"success": res.Success,
-			"message": res.Message,
-			"accessToken": res.AccessToken,
-			"refreshToken": res.RefreshToken,
+			"message": res.Message, 
 			"isVerified": res.IsVerified,
 		})
 		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
