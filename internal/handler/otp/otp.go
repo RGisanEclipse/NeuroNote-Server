@@ -7,12 +7,15 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/sirupsen/logrus"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 	models "github.com/RGisanEclipse/NeuroNote-Server/internal/models/otp"
 	otpService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
+	"github.com/sirupsen/logrus"
 )
 
 func RegisterOTPRoutes(router *mux.Router, svc otpService.OTPService) {
@@ -27,29 +30,31 @@ func requestOTPHandler(svc otpService.OTPService) http.HandlerFunc {
 
 		userId, ok := ctx.Value(user.UserIdKey).(string)
 		if !ok || userId == "" {
-			logger.Error("OTP unauthorised request", nil, logrus.Fields{
+			logger.Warn(auth.AuthError.Unauthorized, nil, logrus.Fields{
 				"userId": userId,
 				"requestId": reqID,
 			})
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			http.Error(w,auth.AuthError.Unauthorized, http.StatusUnauthorized)
 			return
 		}
 
 		var req models.OTPRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Error("OTP invalid request", err, logrus.Fields{
+			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
 				"user": userId,
 				"requestId": reqID,
+				"request": req,
 			})
-			http.Error(w, "invalid request", http.StatusBadRequest)
+			http.Error(w,server.ServerError.InvalidBody, http.StatusBadRequest)
 			return
 		}
 		if !otpService.IsValidPurpose(req.Purpose) {
-			logger.Error("Invalid Purpose for OTP", err, logrus.Fields{
+			logger.Warn(otp.OTPError.InvalidPurpose, nil, logrus.Fields{
 				"user": userId,
 				"requestId": reqID,
+				"purpose": req.Purpose,
 			})
-			http.Error(w, "invalid purpose", http.StatusBadRequest)
+			http.Error(w, otp.OTPError.InvalidPurpose, http.StatusBadRequest)
 			return
 		}
 
@@ -76,47 +81,44 @@ func verifyOTPHandler(svc otpService.OTPService) http.HandlerFunc {
 
 		userId, ok := ctx.Value(user.UserIdKey).(string)
 		if !ok || userId == "" {
-			logger.Error("unauthorised request for OTP verification", nil, logrus.Fields{
+			logger.Warn(auth.AuthError.Unauthorized, nil, logrus.Fields{
 				"userID": userId,
 				"requestId": reqID,
 			})
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			http.Error(w, auth.AuthError.Unauthorized, http.StatusUnauthorized)
 			return
 		}
 
 		var req models.OTPVerifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Error("verify OTP invalid request", err, logrus.Fields{
+			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
 				"userID": userId,
 				"requestId": reqID,
+				"req": req,
 			})
-			http.Error(w, "invalid request", http.StatusBadRequest)
+			http.Error(w,server.ServerError.InvalidBody, http.StatusBadRequest)
 			return
 		}
 		if req.OTP == "" {
-			logger.Error("verify OTP empty code received", nil, logrus.Fields{
+			logger.Warn(otp.OTPError.OTPCodeMissing, nil, logrus.Fields{
 				"userID": userId,
 				"requestId": reqID,
 			})
-			http.Error(w, "code is required", http.StatusBadRequest)
+			http.Error(w, otp.OTPError.OTPCodeMissing, http.StatusBadRequest)
 			return
 		}
 		if !otpService.IsValidPurpose(req.Purpose) {
-			logger.Error("verify OTP invalid Purpose", nil, logrus.Fields{
+			logger.Warn(otp.OTPError.InvalidPurpose, nil, logrus.Fields{
 				"userID": userId,
 				"requestId": reqID,
 				"purpose": req.Purpose,
 			})
-			http.Error(w, "invalid purpose", http.StatusBadRequest)
+			http.Error(w, otp.OTPError.InvalidPurpose, http.StatusBadRequest)
 			return
 		}
 
 		resp, err := svc.VerifyOTP(ctx, userId, req.OTP, req.Purpose)
 		if err != nil {
-			logger.Error("OTP verification failed", err, logrus.Fields{
-				"userID": userId,
-				"requestId": reqID,
-			})
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
