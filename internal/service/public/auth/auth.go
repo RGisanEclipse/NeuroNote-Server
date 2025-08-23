@@ -27,13 +27,13 @@ func New(userrepo userrepo.Repository, redisrepo redisrepo.Repository) *Service 
 
 // Signup registers a new user and returns a JWT token.
 // It checks if the email is already taken, hashes the password, creates the user
-func (s *Service) Signup(ctx context.Context, email, password string) (authModels.AuthResponse, error) {
+func (s *Service) Signup(ctx context.Context, email, password string) (authModels.AuthServiceResponse, error) {
 
 	exists, err := s.userrepo.UserExists(ctx, email)
 	reqID := request.FromContext(ctx)
 	if err != nil {
 		logger.Error(dbErr.DBError.QueryFailed, err)
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -43,7 +43,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 			"email":     email,
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: authErr.AuthError.EmailExists,
 		}, errors.New(authErr.AuthError.EmailExists)
@@ -54,7 +54,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		logger.Error(authErr.AuthError.PasswordHashingFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -66,7 +66,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		logger.Error(dbErr.DBError.QueryFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: success,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -78,7 +78,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -88,7 +88,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		logger.Error(dbErr.RedisError.SetRefreshTokenFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -99,7 +99,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 		"requestId": reqID,
 		"userId":    userId,
 	})
-	return authModels.AuthResponse{
+	return authModels.AuthServiceResponse{
 		Success: true,
 		Message: "Account created successfully",
 		AccessToken:   accessToken,
@@ -110,7 +110,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 
 // Signin authenticates a user and returns a JWT token.
 // It checks if the user exists, verifies the password, and generates a token.    
-func (s *Service) Signin(ctx context.Context, email, password string) (authModels.AuthResponse, error) {
+func (s *Service) Signin(ctx context.Context, email, password string) (authModels.AuthServiceResponse, error) {
 	creds, err := s.userrepo.GetUserCreds(ctx, email)
 	reqID := request.FromContext(ctx)
 
@@ -118,7 +118,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		logger.Error(authErr.AuthError.EmailDoesntExist, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success:    false,
 			Message:    authErr.AuthError.EmailDoesntExist,
 			IsVerified: false,
@@ -132,7 +132,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		logger.Error(dbErr.DBError.QueryFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success:    false,
 			Message:    serverErr.ServerError.InternalError,
 			IsVerified: false,
@@ -143,7 +143,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		logger.Warn(authErr.AuthError.IncorrectPassword, nil, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success:    false,
 			Message:    authErr.AuthError.IncorrectPassword,
 			IsVerified: false,
@@ -155,7 +155,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success:    false,
 			Message:    serverErr.ServerError.InternalError,
 			IsVerified: false,
@@ -166,7 +166,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		logger.Error(dbErr.RedisError.SetRefreshTokenFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.AuthResponse{
+		return authModels.AuthServiceResponse{
 			Success: false,
 			Message: serverErr.ServerError.InternalError,
 		}, errors.New(serverErr.ServerError.InternalError)
@@ -177,7 +177,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 		"requestId": reqID,
 		"userId":    userId,
 	})
-	return authModels.AuthResponse{
+	return authModels.AuthServiceResponse{
 		Success:    true,
 		Message:    "Logged in successfully",
 		AccessToken: accessToken,
@@ -186,7 +186,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 	}, nil
 }
 
-func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenResponse, error) {
+func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, error) {
 	reqID := request.FromContext(ctx)
 
 	claims, err := authutils.VerifyAuthToken(refreshToken)
@@ -194,7 +194,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		logger.Warn(authErr.AuthError.InvalidRefreshToken, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
+		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
 	}
 
 	userId := claims.UserID
@@ -203,7 +203,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		logger.Error("Refresh token missing required claims", nil, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
+		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.AuthError.InvalidRefreshToken)
 	}
 
 	storedToken, err := s.redisrepo.GetRefreshToken(ctx, userId)
@@ -213,7 +213,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 			"storedToken":  storedToken,
 			"providedToken": refreshToken,
 		})
-		return authModels.RefreshTokenResponse{}, errors.New(authErr.AuthError.RefreshTokenMismatch)
+		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.AuthError.RefreshTokenMismatch)
 	}
 
 	// Immediately delete the used refresh token to prevent reuse
@@ -229,14 +229,14 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		logger.Error(authErr.AuthError.TokenGenerationFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenResponse{}, errors.New(serverErr.ServerError.InternalError)
+		return authModels.RefreshTokenServiceResponse{}, errors.New(serverErr.ServerError.InternalError)
 	}
 
 	if err := s.redisrepo.SetRefreshToken(ctx, userId, newRefreshToken, RefreshTokenExpiry); err != nil {
 		logger.Error(dbErr.RedisError.SetRefreshTokenFailed, err, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenResponse{}, errors.New(serverErr.ServerError.InternalError)
+		return authModels.RefreshTokenServiceResponse{}, errors.New(serverErr.ServerError.InternalError)
 	}
 
 	logger.Info("Refresh token generated successfully", logger.Fields{
@@ -245,7 +245,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		"oldTokenExpiry": claims.ExpiresAt.Time,
 	})
 	
-	return authModels.RefreshTokenResponse{
+	return authModels.RefreshTokenServiceResponse{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 	}, nil

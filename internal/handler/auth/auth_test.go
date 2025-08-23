@@ -21,18 +21,18 @@ import (
 // Mock service that satisfies authservice.Service
 type mockAuthService struct{ mock.Mock }
 
-func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.AuthResponse, error) {
+func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.AuthServiceResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.Get(0).(authmodel.AuthResponse), args.Error(1)
+	return args.Get(0).(authmodel.AuthServiceResponse), args.Error(1)
 }
-func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.AuthResponse, error) {
+func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.AuthServiceResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.Get(0).(authmodel.AuthResponse), args.Error(1)
+	return args.Get(0).(authmodel.AuthServiceResponse), args.Error(1)
 }
 
-func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string) (authmodel.RefreshTokenResponse, error) {
+func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string) (authmodel.RefreshTokenServiceResponse, error) {
 	args := m.Called(ctx, refreshToken)
-	return args.Get(0).(authmodel.RefreshTokenResponse), args.Error(1)
+	return args.Get(0).(authmodel.RefreshTokenServiceResponse), args.Error(1)
 }
 
 // Signup handler tests
@@ -41,7 +41,7 @@ func TestSignupHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.AuthRequest
-		mockReturn     *authmodel.AuthResponse
+		mockReturn     *authmodel.AuthServiceResponse
 		mockError      error
 		expectedStatus int
 		expectedBody   *authmodel.AuthResponse
@@ -50,11 +50,10 @@ func TestSignupHandler(t *testing.T) {
 		{
 			name: "Success",
 			request: authmodel.AuthRequest{Email: "test@example.com", Password: "validPass@1234"},
-			mockReturn: &authmodel.AuthResponse{
+			mockReturn: &authmodel.AuthServiceResponse{
 				Success: true,
 				Message: "Account created succesfully",
 				AccessToken: "random-jwt-token",
-				RefreshToken: "random-refresh-token",
 				IsVerified: false,
 			},
 			mockError: nil,
@@ -63,7 +62,6 @@ func TestSignupHandler(t *testing.T) {
 				Success: true,
 				Message: "Account created succesfully",
 				AccessToken: "random-jwt-token",
-				RefreshToken: "random-refresh-token",
 				IsVerified: false,
 			},
 			expectCall: true,
@@ -71,7 +69,7 @@ func TestSignupHandler(t *testing.T) {
 		{
 			name: "EmailExists",
 			request: authmodel.AuthRequest{Email: "exists@example.com", Password: "validPass@1234"},
-			mockReturn: &authmodel.AuthResponse{
+			mockReturn: &authmodel.AuthServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.EmailExists,
 			},
@@ -223,7 +221,7 @@ func TestSigninHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.AuthRequest
-		mockReturn     *authmodel.AuthResponse
+		mockReturn     *authmodel.AuthServiceResponse
 		mockError      error
 		expectedStatus int
 		expectedBody   *authmodel.AuthResponse
@@ -232,11 +230,10 @@ func TestSigninHandler(t *testing.T) {
 		{
 			name: "Success",
 			request: authmodel.AuthRequest{Email: "user@example.com", Password: "123456"},
-			mockReturn: &authmodel.AuthResponse{
+			mockReturn: &authmodel.AuthServiceResponse{
 				Success: true,
 				Message: "Logged in successfully",
 				AccessToken: "valid-jwt-token",
-				RefreshToken: "valid-refresh-token",
 				IsVerified: false,
 			},
 			mockError: nil,
@@ -245,7 +242,6 @@ func TestSigninHandler(t *testing.T) {
 				Success: true,
 				Message: "Logged in successfully",
 				AccessToken: "valid-jwt-token",
-				RefreshToken: "valid-refresh-token",
 				IsVerified: false,
 			},
 			expectCall: true,
@@ -253,7 +249,7 @@ func TestSigninHandler(t *testing.T) {
 		{
 			name: "WrongPassword",
 			request: authmodel.AuthRequest{Email: "user@example.com", Password: "wrong"},
-			mockReturn: &authmodel.AuthResponse{
+			mockReturn: &authmodel.AuthServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.IncorrectPassword,
 			},
@@ -268,7 +264,7 @@ func TestSigninHandler(t *testing.T) {
 		{
 			name: "EmailDoesNotExist",
 			request: authmodel.AuthRequest{Email: "ghost@example.com", Password: "123456"},
-			mockReturn: &authmodel.AuthResponse{
+			mockReturn: &authmodel.AuthServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.EmailDoesntExist,
 			},

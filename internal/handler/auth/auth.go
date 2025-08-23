@@ -66,11 +66,21 @@ func signupHandler(svc authservice.AuthService) http.HandlerFunc {
 			"message": res.Message, 
 			"isVerified": res.IsVerified,
 		})
+
+		http.SetCookie(w, &http.Cookie{
+            Name:     "refreshToken",
+            Value:    res.RefreshToken,
+            HttpOnly: true,
+            Secure:   true,
+            SameSite: http.SameSiteStrictMode,
+            Path:     "/",
+            MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+        })
+
 		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
 			Success: res.Success,
 			Message: res.Message,
 			AccessToken:   res.AccessToken,
-			RefreshToken: res.RefreshToken,
 			IsVerified: res.IsVerified,
 		})
 	}
@@ -102,11 +112,21 @@ func signinHandler(svc authservice.AuthService) http.HandlerFunc {
 			})
 			return
 		}
+
+		http.SetCookie(w, &http.Cookie{
+            Name:     "refreshToken",
+            Value:    res.RefreshToken,
+            HttpOnly: true,
+            Secure:   true,
+            SameSite: http.SameSiteStrictMode,
+            Path:     "/",
+            MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+        })
+
 		response.WriteJSON(w, http.StatusOK, authmodel.AuthResponse{
 			Success: res.Success,
 			Message: res.Message,
 			AccessToken:  res.AccessToken,
-			RefreshToken: res.RefreshToken,
 			IsVerified: res.IsVerified,
 		})
 	}
@@ -123,7 +143,6 @@ func refreshTokenHandler(svc authservice.AuthService) http.HandlerFunc{
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.RefreshTokenResponse{
 				AccessToken:  "",
-				RefreshToken: "",
 			})
 			return
 		}
@@ -136,14 +155,22 @@ func refreshTokenHandler(svc authservice.AuthService) http.HandlerFunc{
 			})
 			response.WriteJSON(w, http.StatusUnauthorized, authmodel.RefreshTokenResponse{
 				AccessToken:  "",
-				RefreshToken: "",
 			})
 			return
 		}
 
+		http.SetCookie(w, &http.Cookie{
+            Name:     "refreshToken",
+            Value:    res.RefreshToken,
+            HttpOnly: true,
+            Secure:   true,
+            SameSite: http.SameSiteStrictMode,
+            Path:     "/",
+            MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+        })
+
 		response.WriteJSON(w, http.StatusOK, authmodel.RefreshTokenResponse{
 			AccessToken:  res.AccessToken,
-			RefreshToken: res.RefreshToken,
 		})
 	}
 }

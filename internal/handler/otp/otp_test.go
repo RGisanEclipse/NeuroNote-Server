@@ -60,7 +60,7 @@ func TestRequestOTPHandler(t *testing.T) {
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   "unauthorized\n",
+			expectedBody:   "unauthorized access\n",
 		},
 		{
 			name:           "Service Error",
@@ -78,7 +78,7 @@ func TestRequestOTPHandler(t *testing.T) {
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "invalid request\n",
+			expectedBody:   "invalid request body\n",
 		},
 		{
 			name:           "Invalid Purpose",
@@ -165,7 +165,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   "unauthorized\n",
+			expectedBody:   "unauthorized access\n",
 		},
 		{
 			name:           "Invalid Request Body",
@@ -174,7 +174,7 @@ func TestVerifyOTPHandler(t *testing.T) {
 			serviceResponse: nil,
 			serviceError:   nil,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "invalid request\n",
+			expectedBody:   "invalid request body\n",
 		},
 		{
 			name:           "Missing OTP Code",

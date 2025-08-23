@@ -6,7 +6,7 @@ import (
 )
 
 type AuthService interface {
-	Signup(ctx context.Context, email, password string) (auth.AuthResponse, error)
-	Signin(ctx context.Context, email, password string) (auth.AuthResponse, error)
-	RefreshToken (ctx context.Context, refreshToken string) (auth.RefreshTokenResponse, error)
+	Signup(ctx context.Context, email, password string) (auth.AuthServiceResponse, error)
+	Signin(ctx context.Context, email, password string) (auth.AuthServiceResponse, error)
+	RefreshToken (ctx context.Context, refreshToken string) (auth.RefreshTokenServiceResponse, error)
 }

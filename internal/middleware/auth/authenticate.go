@@ -1,13 +1,14 @@
 package auth
+
 import (
 	"context"
 	"net/http"
 	"strings"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 )
 
 func AuthMiddleware(next http.Handler) http.Handler {
