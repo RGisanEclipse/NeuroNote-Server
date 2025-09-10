@@ -67,7 +67,7 @@ func main() {
 	// Setup Port and Server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8443"
 	}
 	srv := &http.Server{
 		Addr:         ":" + port,
@@ -96,8 +96,8 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error(server.ServerError.HTTPServerError, err)
+	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && err != http.ErrServerClosed {
+    logger.Error(server.ServerError.HTTPServerError, err)
 	}
 
 	<-idleConnsClosed

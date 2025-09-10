@@ -54,3 +54,8 @@ go.work
 **/Dockerfile.local
 **/docker-compose.*
 
+cert.pem
+key.pem
+*.crt
+*.key
+
