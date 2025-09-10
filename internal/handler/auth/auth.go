@@ -16,9 +16,9 @@ import (
 )
 
 func RegisterAuthRoutes(router *mux.Router, svc authservice.AuthService) {
-	router.HandleFunc("/signup", signupHandler(svc)).Methods("POST")
-	router.HandleFunc("/signin", signinHandler(svc)).Methods("POST")
-	router.HandleFunc("/auth/refreshtoken", refreshTokenHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/auth/signup", signupHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/auth/signin", signinHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/auth/token/refresh", refreshTokenHandler(svc)).Methods("POST")
 }
 
 

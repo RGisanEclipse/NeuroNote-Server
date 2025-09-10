@@ -19,8 +19,8 @@ import (
 )
 
 func RegisterOTPRoutes(router *mux.Router, svc otpService.OTPService) {
-	router.HandleFunc("/auth/otp/request", requestOTPHandler(svc)).Methods("POST")
-	router.HandleFunc("/auth/otp/verify", verifyOTPHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/auth/otp/request", requestOTPHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/auth/otp/verify", verifyOTPHandler(svc)).Methods("POST")
 }
 
 func requestOTPHandler(svc otpService.OTPService) http.HandlerFunc {
