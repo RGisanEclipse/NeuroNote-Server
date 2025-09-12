@@ -7,7 +7,6 @@ import (
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/sirupsen/logrus"
 
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
@@ -105,18 +104,6 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 	}
 
 	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)
-
-	if purpose == string(OTPPurposeSignup){
-		err = s.userrepo.MarkUserVerified(ctx, userID)
-		if err != nil{
-			logger.Error(dbErr.DBError.UpdateFailed, err, logrus.Fields{
-				"userId": userID,
-				"requestId": requestId,
-				"message": "Failed to mark the user verified in db",
-			})
-			return false, errors.New(serverErr.ServerError.InternalError)
-		}
-	}
 
 	return true, nil
 }

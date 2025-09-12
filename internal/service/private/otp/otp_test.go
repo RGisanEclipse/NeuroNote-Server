@@ -49,6 +49,7 @@ func (m *MockUserRepo) MarkUserVerified(ctx context.Context, userID string) erro
 	return args.Error(0)
 }
 
+
 type MockRedisRepo struct {
 	mock.Mock
 }
@@ -243,144 +244,112 @@ func TestRequestOTP(t *testing.T) {
 
 func TestVerifyOTP(t *testing.T) {
 	tests := []struct {
-		name                string
-		userID              string
-		code                string
-		purpose             string
-		storedOTP           string
-		redisGetError       error
-		markVerifiedError   error
-		expectedSuccess     bool
-		expectedError       string
-		expectGetOTP        bool
-		expectDeleteOTP     bool
-		expectMarkVerified  bool
+		name            string
+		userID          string
+		code            string
+		purpose         string
+		storedOTP       string
+		redisGetError   error
+		expectedSuccess bool
+		expectedError   string
+		expectGetOTP    bool
+		expectDeleteOTP bool
 	}{
 		{
-			name:               "Success_Signup",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: true,
+			name:            "Success_Signup",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 		{
-			name:               "Success_ForgotPassword",
-			userID:             "user456",
-			code:               "789012",
-			purpose:            "forgot_password",
-			storedOTP:          "789012",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: false, // Forgot password doesn't mark user as verified
+			name:            "Success_ForgotPassword",
+			userID:          "user456",
+			code:            "789012",
+			purpose:         "forgot_password",
+			storedOTP:       "789012",
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 		{
-			name:               "RedisGetError",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "",
-			redisGetError:      errors.New("redis connection failed"),
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "internal server error",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "RedisGetError",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "",
+			redisGetError:   errors.New("redis connection failed"),
+			expectedSuccess: false,
+			expectedError:   "internal server error",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "OTPExpiredOrNotFound",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "", // Empty OTP means expired/not found
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "otp expired or not found",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "OTPExpiredOrNotFound",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "", // Empty OTP means expired/not found
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "otp expired or not found",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "InvalidOTP",
-			userID:             "user123",
-			code:               "654321", // Wrong code
-			purpose:            "signup",
-			storedOTP:          "123456", // Correct OTP
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "InvalidOTP",
+			userID:          "user123",
+			code:            "654321", // Wrong code
+			purpose:         "signup",
+			storedOTP:       "123456", // Correct OTP
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "MarkUserVerifiedError",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  errors.New("database update failed"),
-			expectedSuccess:    false,
-			expectedError:      "internal server error",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: true,
+			name:            "CaseSensitiveOTP",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "123456", // Exact match
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 		{
-			name:               "CaseSensitiveOTP",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "123456", // Exact match
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: true,
+			name:            "EmptyCode",
+			userID:          "user123",
+			code:            "", // Empty code
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "EmptyCode",
-			userID:             "user123",
-			code:               "", // Empty code
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
-		},
-		{
-			name:               "WhitespaceInCode",
-			userID:             "user123",
-			code:               " 123456 ", // Code with whitespace
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "WhitespaceInCode",
+			userID:          "user123",
+			code:            " 123456 ", // Code with whitespace
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 	}
 
@@ -402,9 +371,6 @@ func TestVerifyOTP(t *testing.T) {
 				mockRedisRepo.On("DeleteOTP", ctx, tt.userID, tt.purpose).Return(nil)
 			}
 
-			if tt.expectMarkVerified {
-				mockUserRepo.On("MarkUserVerified", ctx, tt.userID).Return(tt.markVerifiedError)
-			}
 
 			// Execute
 			success, err := service.VerifyOTP(ctx, tt.userID, tt.code, tt.purpose)
@@ -421,9 +387,6 @@ func TestVerifyOTP(t *testing.T) {
 			// Verify mock expectations
 			if tt.expectGetOTP {
 				mockRedisRepo.AssertExpectations(t)
-			}
-			if tt.expectMarkVerified {
-				mockUserRepo.AssertExpectations(t)
 			}
 		})
 	}
@@ -568,102 +531,88 @@ func TestRequestOTP_EdgeCases(t *testing.T) {
 // TestVerifyOTP_EdgeCases tests edge cases and boundary conditions
 func TestVerifyOTP_EdgeCases(t *testing.T) {
 	tests := []struct {
-		name                string
-		userID              string
-		code                string
-		purpose             string
-		storedOTP           string
-		redisGetError       error
-		markVerifiedError   error
-		expectedSuccess     bool
-		expectedError       string
-		expectGetOTP        bool
-		expectDeleteOTP     bool
-		expectMarkVerified  bool
+		name            string
+		userID          string
+		code            string
+		purpose         string
+		storedOTP       string
+		redisGetError   error
+		expectedSuccess bool
+		expectedError   string
+		expectGetOTP    bool
+		expectDeleteOTP bool
 	}{
 		{
-			name:               "EmptyUserID",
-			userID:             "",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: true,
+			name:            "EmptyUserID",
+			userID:          "",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 		{
-			name:               "EmptyPurpose",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: false, // Empty purpose doesn't match "signup"
+			name:            "EmptyPurpose",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 		{
-			name:               "VeryLongCode",
-			userID:             "user123",
-			code:               "1234567890123456789012345678901234567890", // Very long code
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "VeryLongCode",
+			userID:          "user123",
+			code:            "1234567890123456789012345678901234567890", // Very long code
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "SpecialCharactersInCode",
-			userID:             "user123",
-			code:               "123@456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "SpecialCharactersInCode",
+			userID:          "user123",
+			code:            "123@456",
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "UnicodeCharactersInCode",
-			userID:             "user123",
-			code:               "123测试456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    false,
-			expectedError:      "invalid otp",
-			expectGetOTP:       true,
-			expectDeleteOTP:    false,
-			expectMarkVerified: false,
+			name:            "UnicodeCharactersInCode",
+			userID:          "user123",
+			code:            "123测试456",
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: false,
+			expectedError:   "invalid otp",
+			expectGetOTP:    true,
+			expectDeleteOTP: false,
 		},
 		{
-			name:               "NumericStringCode",
-			userID:             "user123",
-			code:               "123456",
-			purpose:            "signup",
-			storedOTP:          "123456",
-			redisGetError:      nil,
-			markVerifiedError:  nil,
-			expectedSuccess:    true,
-			expectedError:      "",
-			expectGetOTP:       true,
-			expectDeleteOTP:    true,
-			expectMarkVerified: true,
+			name:            "NumericStringCode",
+			userID:          "user123",
+			code:            "123456",
+			purpose:         "signup",
+			storedOTP:       "123456",
+			redisGetError:   nil,
+			expectedSuccess: true,
+			expectedError:   "",
+			expectGetOTP:    true,
+			expectDeleteOTP: true,
 		},
 	}
 
@@ -685,9 +634,6 @@ func TestVerifyOTP_EdgeCases(t *testing.T) {
 				mockRedisRepo.On("DeleteOTP", ctx, tt.userID, tt.purpose).Return(nil)
 			}
 
-			if tt.expectMarkVerified {
-				mockUserRepo.On("MarkUserVerified", ctx, tt.userID).Return(tt.markVerifiedError)
-			}
 
 			// Execute
 			success, err := service.VerifyOTP(ctx, tt.userID, tt.code, tt.purpose)
@@ -704,9 +650,6 @@ func TestVerifyOTP_EdgeCases(t *testing.T) {
 			// Verify mock expectations
 			if tt.expectGetOTP {
 				mockRedisRepo.AssertExpectations(t)
-			}
-			if tt.expectMarkVerified {
-				mockUserRepo.AssertExpectations(t)
 			}
 		})
 	}

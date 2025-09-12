@@ -435,7 +435,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		expectCall     bool
 	}{
 		{
-			name: "Success",
+			name: "Success_WithUserVerification",
 			request: authmodel.SignupOTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
@@ -453,7 +453,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectCall: true,
 		},
 		{
-			name: "InvalidOTP",
+			name: "InvalidOTP_NoUserVerification",
 			request: authmodel.SignupOTPVerifyRequest{
 				UserId: "user123",
 				Code:   "wrong123",
@@ -471,7 +471,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectCall: true,
 		},
 		{
-			name: "OTPExpiredOrNotFound",
+			name: "OTPExpiredOrNotFound_NoUserVerification",
 			request: authmodel.SignupOTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
@@ -485,6 +485,42 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedBody: &authmodel.SignupOTPResponse{
 				Success: false,
 				Message: otpErr.OTPError.OTPExpiredOrNotFound,
+			},
+			expectCall: true,
+		},
+		{
+			name: "OTPVerificationFailure_NoUserVerification",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			mockError:      nil, // OTP service returns success=false but no error
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			expectCall: true,
+		},
+		{
+			name: "UserVerificationDatabaseError",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "Failed to mark user as verified",
+			},
+			mockError:      nil, // OTP verification succeeds but user verification fails
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "Failed to mark user as verified",
 			},
 			expectCall: true,
 		},
@@ -515,6 +551,19 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectCall: false,
 		},
 		{
+			name: "EmptyUserIdAndCode",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "",
+				Code:   "",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
 			name: "InvalidRequestBody",
 			request: authmodel.SignupOTPVerifyRequest{},
 			expectedStatus: http.StatusBadRequest,
@@ -525,7 +574,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectCall: false,
 		},
 		{
-			name: "InternalServerError",
+			name: "InternalServerError_OTPService",
 			request: authmodel.SignupOTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
@@ -539,6 +588,114 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedBody: &authmodel.SignupOTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.InternalError,
+			},
+			expectCall: true,
+		},
+		{
+			name: "VeryLongUserId",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "very-long-user-id-that-exceeds-normal-limits-and-might-cause-issues-in-some-systems",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			expectCall: true,
+		},
+		{
+			name: "VeryLongCode",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user123",
+				Code:   "1234567890123456789012345678901234567890",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			expectCall: true,
+		},
+		{
+			name: "SpecialCharactersInUserId",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user-123_test@domain",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			expectCall: true,
+		},
+		{
+			name: "SpecialCharactersInCode",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123@456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			expectCall: true,
+		},
+		{
+			name: "WhitespaceInUserId",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: " user123 ",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+			},
+			expectCall: true,
+		},
+		{
+			name: "WhitespaceInCode",
+			request: authmodel.SignupOTPVerifyRequest{
+				UserId: "user123",
+				Code:   " 123456 ",
+			},
+			mockReturn: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
+			},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.SignupOTPResponse{
+				Success: false,
+				Message: "OTP verification failed",
 			},
 			expectCall: true,
 		},

@@ -312,8 +312,18 @@ func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (auth
             Message: authErr.AuthError.OTPVerificationFailure,
         }, nil
     }
+	err = s.userrepo.MarkUserVerified(ctx, userId)
 
-    logger.Info("Signup OTP verified successfully", logFields)
+	if err != nil{
+		logger.Warn(dbErr.DBError.UpdateFailed, err, logFields)
+		
+		return authModels.SignupOTPResponse{
+			Success: false,
+			Message: "Failed to mark user as verified",
+		}, nil
+	}
+    
+	logger.Info("Signup OTP verified successfully", logFields)
 
     return authModels.SignupOTPResponse{
         Success: true,
