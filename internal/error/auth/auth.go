@@ -13,6 +13,9 @@ type AuthErrorMessages struct {
 	UserNotFound           string
 	InvalidRefreshToken    string
 	RefreshTokenMismatch   string
+	InternalServiceError   string
+	OTPSendFailure         string
+	OTPVerificationFailure string
 
 	// Email validation errors
 	EmailRequired                     string
@@ -42,6 +45,9 @@ var AuthError = AuthErrorMessages{
 	UserNotFound:           "user not found",
 	InvalidRefreshToken:    "invalid refresh token",
 	RefreshTokenMismatch:   "refresh token does not match stored token",
+	InternalServiceError:   "internal service error",
+	OTPSendFailure:         "failed to send OTP",
+	OTPVerificationFailure: "failed to verify OTP",
 	
 	// Email validation messages
 	EmailRequired:                     "email is required",

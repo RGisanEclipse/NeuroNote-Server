@@ -15,7 +15,6 @@ import (
 	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
 	phoenixErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/phoenix"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-	models "github.com/RGisanEclipse/NeuroNote-Server/internal/models/otp"
 	emailtemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates"
 	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
 	otpUtils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/otp"
@@ -34,8 +33,8 @@ func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice
 		phoenixservice: phoenixservice,
 	}
 }
-
-func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string) (*models.OTPResponse, error) {
+// Returns true if the request is successful or error otherwise
+func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string) (bool, error) {
 	requestId := request.FromContext(ctx)
 	otp := otpUtils.GenerateOTP()
 	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute, purpose)
@@ -44,7 +43,7 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 			"userId": userId,
 			"requestId": requestId,
 		})
-		return nil, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.ServerError.InternalError)
 	}
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
@@ -52,14 +51,14 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 			"userId": userId,
 			"requestId": requestId,
 		})
-		return nil, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.ServerError.InternalError)
 	}
 	if email == "" {
 		logger.Error(otpErr.OTPError.EmptyEmailForUser, nil, logger.Fields{
 			"userId": userId,
 			"requestId": requestId,
 		})
-		return nil, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.ServerError.InternalError)
 	}
 	
 	template := emailtemplates.GetOTPTemplate(otp)
@@ -70,16 +69,13 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 			"requestId": requestId,
 			"errorMessage": err.Error(),
 		})
-		return nil, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.ServerError.InternalError)
 	}
 	
-	return &models.OTPResponse{
-		Success: true,
-		Message: "OTP sent successfully",
-	}, nil
+	return true, nil
 }
 
-func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, purpose string) (*models.OTPResponse, error) {
+func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, purpose string) (bool, error) {
 	requestId := request.FromContext(ctx)
 	storedOTP, err := s.redisrepo.GetOTP(ctx, userID, purpose)
 	if err != nil {
@@ -88,7 +84,7 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 			"requestId": requestId,
 			"errorMessage": dbErr.RedisError.GetOTPFailed,
 		})
-		return nil, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.ServerError.InternalError)
 	}
 
 	if storedOTP == "" {
@@ -96,10 +92,7 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 			"userId": userID,
 			"requestId": requestId,
 		})
-		return &models.OTPResponse{
-			Success: false,
-			Message: otpErr.OTPError.OTPExpiredOrNotFound,
-		}, errors.New(otpErr.OTPError.OTPExpiredOrNotFound)
+		return false, errors.New(otpErr.OTPError.OTPExpiredOrNotFound)
 	}
 
 	if code != storedOTP {
@@ -108,10 +101,7 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 			"requestId": requestId,
 			"providedOTP": code,
 		})
-		return &models.OTPResponse{
-			Success: false,
-			Message: otpErr.OTPError.InvalidOTP,
-		}, errors.New(otpErr.OTPError.InvalidOTP)
+		return false, errors.New(otpErr.OTPError.InvalidOTP)
 	}
 
 	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)
@@ -124,15 +114,9 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 				"requestId": requestId,
 				"message": "Failed to mark the user verified in db",
 			})
-			return &models.OTPResponse{
-				Success: false,
-				Message: serverErr.ServerError.InternalError,
-			}, errors.New(serverErr.ServerError.InternalError)
+			return false, errors.New(serverErr.ServerError.InternalError)
 		}
 	}
 
-	return &models.OTPResponse{
-		Success: true,
-		Message: "OTP verified successfully",
-	}, nil
+	return true, nil
 }

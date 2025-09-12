@@ -4,7 +4,6 @@ import (
 	"github.com/gorilla/mux"
 
 	authHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/auth"
-	otpHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/otp"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private"
 )
@@ -15,5 +14,5 @@ func RegisterPublicRoutes(router *mux.Router, services *public.PublicServices) {
 }
 // RegisterPrivateRoutes registers all private routes for the application
 func RegisterPrivateRoutes(router *mux.Router, services *private.PrivateServices) {
-	otpHandler.RegisterOTPRoutes(router, services.OTP)
+	// Currently there are no private routes to register, but all the private routes registrations will go here
 }

@@ -14,16 +14,18 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
+	otpService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
 )
 
 type Service struct {
 	userrepo userrepo.Repository
 	redisrepo redisrepo.Repository
+	otpService otpService.OTPService
 }
 
 const RefreshTokenExpiry = 7 * 24 * time.Hour
 
-func New(userrepo userrepo.Repository, redisrepo redisrepo.Repository) *Service { return &Service{userrepo, redisrepo} }
+func New(userrepo userrepo.Repository, redisrepo redisrepo.Repository, otpService otpService.OTPService) *Service { return &Service{userrepo, redisrepo, otpService} }
 
 // Signup registers a new user and returns a JWT token.
 // It checks if the email is already taken, hashes the password, creates the user
@@ -249,4 +251,72 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
+}
+
+func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.SignupOTPResponse, error) {
+    reqID := request.FromContext(ctx)
+
+    logFields := logger.Fields{
+        "userId":    userId,
+        "requestId": reqID,
+        "purpose":   otpService.OTPPurposeSignup,
+    }
+
+    success, err := s.otpService.RequestOTP(ctx, userId, string(otpService.OTPPurposeSignup))
+    if err != nil {
+        logger.Error("Failed to send OTP due to service error", err, logFields)
+        return authModels.SignupOTPResponse{
+            Success: false,
+            Message: authErr.AuthError.InternalServiceError,
+        }, err
+    }
+
+    if !success {
+        logger.Warn("OTP service returned unsuccessful result", nil, logFields)
+        return authModels.SignupOTPResponse{
+            Success: false,
+            Message: authErr.AuthError.OTPSendFailure, 
+        }, nil
+    }
+
+    logger.Info("Signup OTP sent successfully", logFields)
+
+    return authModels.SignupOTPResponse{
+        Success: true,
+        Message: "OTP sent successfully",
+    }, nil
+}
+
+func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (authModels.SignupOTPResponse, error) {
+    reqID := request.FromContext(ctx)
+
+    logFields := logger.Fields{
+        "userId":    userId,
+        "requestId": reqID,
+        "purpose":   otpService.OTPPurposeSignup,
+    }
+
+    success, err := s.otpService.VerifyOTP(ctx, userId, otp, string(otpService.OTPPurposeSignup))
+    if err != nil {
+        logger.Error("Failed to verify OTP due to service error", err, logFields)
+        return authModels.SignupOTPResponse{
+            Success: false,
+            Message: authErr.AuthError.InternalServiceError,
+        }, err
+    }
+
+    if !success {
+        logger.Warn("OTP verification failed", nil, logFields)
+        return authModels.SignupOTPResponse{
+            Success: false,
+            Message: authErr.AuthError.OTPVerificationFailure,
+        }, nil
+    }
+
+    logger.Info("Signup OTP verified successfully", logFields)
+
+    return authModels.SignupOTPResponse{
+        Success: true,
+        Message: "OTP verified successfully",
+    }, nil
 }
