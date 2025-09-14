@@ -1216,6 +1216,23 @@ func TestPasswordResetHandler(t *testing.T) {
 			expectCall: true,
 		},
 		{
+			name: "WeakPassword",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "weak",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Password doesn't match the required criteria",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Password doesn't match the required criteria",
+			},
+			expectCall: true,
+		},
+		{
 			name:           "InvalidRequestBody",
 			request:        authmodel.ResetPasswordRequest{},
 			expectedStatus: http.StatusBadRequest,
@@ -1224,6 +1241,42 @@ func TestPasswordResetHandler(t *testing.T) {
 				Message: "Invalid userId",
 			},
 			expectCall: false,
+		},
+		{
+			name: "OTPNotVerified",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "newpassword123",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: authErr.Error.PasswordOTPNotVerified,
+			},
+			mockError:      errors.New(authErr.Error.PasswordOTPNotVerified),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: authErr.Error.PasswordOTPNotVerified,
+			},
+			expectCall: true,
+		},
+		{
+			name: "RedisFlagCheckFailed",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "newpassword123",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: serverErr.Error.InternalError,
+			},
+			mockError:      errors.New(serverErr.Error.InternalError),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: serverErr.Error.InternalError,
+			},
+			expectCall: true,
 		},
 		{
 			name: "InternalServerError",
