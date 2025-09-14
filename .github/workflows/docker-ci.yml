@@ -75,18 +75,15 @@ jobs:
 
       - name: Run server container and wait for health
         run: |
-          network=$(docker network ls --filter name=github_network --format "{{.Name}}" | head -n 1)
-          
           docker run -d --rm \
             --name neuronote-app \
-            --network $network \
             -v $PWD/certs:/app/certs:ro \
             -p 8443:8443 \
             --env-file .env \
             neuronote-server
 
           echo "Waiting for app health check on https://localhost:8443/health ..."
-          
+
           for i in {1..15}; do
             echo "Checking https://localhost:8443/health (attempt $i)..."
             if curl -k --fail https://localhost:8443/health; then
