@@ -44,8 +44,8 @@ jobs:
       - name: Save SSL certs
         run: |
           mkdir certs
-          echo "${{ secrets.SSL_CERT }}" > certs/cert.pem
-          echo "${{ secrets.SSL_KEY }}" > certs/key.pem
+          echo "${{ secrets.SSL_CERT }}" > certs/localhost.pem
+          echo "${{ secrets.SSL_KEY }}" > certs/localhost-key.pem
 
       - name: Build Docker image
         run: |
