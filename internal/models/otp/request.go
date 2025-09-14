@@ -1,5 +1,5 @@
 package otp
 
-type OTPRequest struct {
+type Request struct {
 	Purpose string `json:"purpose"`
 }

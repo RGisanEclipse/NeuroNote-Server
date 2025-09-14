@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/common"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/user"
-	
 )
 
 // Init connects to Postgres and runs migrations.
@@ -35,7 +34,7 @@ func Init() error {
 		}
 
 		// Auto-migrate the User table.
-		if err = common.DB.AutoMigrate(&user.UserModel{}); err != nil {
+		if err = common.DB.AutoMigrate(&user.Model{}); err != nil {
 			return
 		}
 		logger.Info("Connected to Postgres and ran migrations")

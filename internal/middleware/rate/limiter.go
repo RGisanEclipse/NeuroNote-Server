@@ -17,7 +17,7 @@ import (
 
 const rateLimitWindow = time.Minute
 
-func RateLimit(next http.Handler) http.Handler {
+func Limit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
@@ -38,7 +38,7 @@ func RateLimit(next http.Handler) http.Handler {
 			key = "rate:ip:" + ip + ":" + route
 		}
 
-		count, err := redis.RedisClient.Incr(r.Context(), key).Result()
+		count, err := redis.Client.Incr(r.Context(), key).Result()
 		if err != nil {
 			logger.Error("RateLimit Redis INCR failed", err, nil)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -46,16 +46,16 @@ func RateLimit(next http.Handler) http.Handler {
 		}
 
 		if count == 1 {
-			_, err := redis.RedisClient.Expire(r.Context(), key, rateLimitWindow).Result()
+			_, err := redis.Client.Expire(r.Context(), key, rateLimitWindow).Result()
 			if err != nil {
-				logger.Error(server.ServerError.TooManyRequests, err, nil)
+				logger.Error(server.Error.TooManyRequests, err, nil)
 			}
 		}
 
 		if count > int64(limit) {
 			logger.Warn(
-				server.ServerError.TooManyRequests,
-				errors.New(server.ServerError.TooManyRequests),
+				server.Error.TooManyRequests,
+				errors.New(server.Error.TooManyRequests),
 				logrus.Fields{"ip": ip, "route": route, "key": key},
 			)
 
@@ -63,7 +63,7 @@ func RateLimit(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusTooManyRequests)
 			_ = json.NewEncoder(w).Encode(models.RateLimitResponse{
 				Success: false,
-				Message: server.ServerError.TooManyRequests,
+				Message: server.Error.TooManyRequests,
 			})
 			return
 		}

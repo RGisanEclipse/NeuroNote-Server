@@ -3,34 +3,34 @@ package redis
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"os"
 	"time"
-	"errors"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
+	"github.com/redis/go-redis/v9"
 )
 
-var RedisClient *redis.Client
+var Client *redis.Client
 
-type RedisRepo struct {
+type Repo struct {
 	client *redis.Client
 }
 
-func NewRedisRepo(client *redis.Client) *RedisRepo {
-	return &RedisRepo{client: client}
+func NewRedisRepo(client *redis.Client) *Repo {
+	return &Repo{client: client}
 }
 
-func InitRedis() error { 
-	redisHost := os.Getenv("REDIS_HOST") 
-	redisPort := os.Getenv("REDIS_PORT") 
+func InitRedis() error {
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
 
 	if redisHost == "" || redisPort == "" {
 		err := fmt.Errorf("missing REDIS_HOST or REDIS_PORT environment variables for Redis")
-		logger.Error(db.RedisError.ConnectionFailed, err)
-		return err 
+		logger.Error(db.Redis.ConnectionFailed, err)
+		return err
 	}
 
 	redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort)
@@ -38,45 +38,48 @@ func InitRedis() error {
 	tlsEnabled := os.Getenv("REDIS_TLS") == "true"
 
 	options := &redis.Options{
-		Addr:     redisAddr,     
-		DB:       0,             
+		Addr: redisAddr,
+		DB:   0,
 	}
 
 	if tlsEnabled {
-		options.TLSConfig = &tls.Config{} 
+		options.TLSConfig = &tls.Config{}
 	}
 
 	maxRetries := 10
 	var err error
 	for i := 0; i < maxRetries; i++ {
-		RedisClient = redis.NewClient(options)
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) 
-		err = RedisClient.Ping(ctx).Err() 
-		cancel() 
+		Client = redis.NewClient(options)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err = Client.Ping(ctx).Err()
+		cancel()
 
 		if err == nil {
 			logger.Info("Connected to Redis")
-			return nil 
+			return nil
 		}
 
-		RedisClient.Close() 
-		time.Sleep(2 * time.Second) 
+		err := Client.Close()
+		if err != nil {
+			return err
+		}
+		time.Sleep(2 * time.Second)
 	}
 
-	return errors.New(db.RedisError.ConnectionFailed)
+	return errors.New(db.Redis.ConnectionFailed)
 }
 
-func (r *RedisRepo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
+func (r *Repo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
 	key := getRefreshTokenKey(userID)
 	return r.client.Set(ctx, key, token, expiry).Err()
 }
 
-func (r *RedisRepo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
+func (r *Repo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
 	key := getRefreshTokenKey(userID)
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisRepo) DeleteRefreshToken(ctx context.Context, userID string) error {
+func (r *Repo) DeleteRefreshToken(ctx context.Context, userID string) error {
 	key := getRefreshTokenKey(userID)
 	return r.client.Del(ctx, key).Err()
 }
@@ -85,22 +88,49 @@ func getRefreshTokenKey(userID string) string {
 	return fmt.Sprintf("refresh_token:%s", userID)
 }
 
-// OTPService Methods
-func (r *RedisRepo) SetOTP(ctx context.Context, userId string, otp string, ttl time.Duration, purpose string) error {
+// SetOTP OTPService Methods
+func (r *Repo) SetOTP(ctx context.Context, userId string, otp string, ttl time.Duration, purpose string) error {
 	key := getOTPKey(userId, purpose)
 	return r.client.Set(ctx, key, otp, ttl).Err()
 }
 
-func (r *RedisRepo) GetOTP(ctx context.Context, userId string, purpose string) (string, error) {
+func (r *Repo) GetOTP(ctx context.Context, userId string, purpose string) (string, error) {
 	key := getOTPKey(userId, purpose)
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisRepo) DeleteOTP(ctx context.Context, userId string, purpose string) error {
+func (r *Repo) DeleteOTP(ctx context.Context, userId string, purpose string) error {
 	key := getOTPKey(userId, purpose)
 	return r.client.Del(ctx, key).Err()
 }
 
 func getOTPKey(userID string, purpose string) string {
 	return fmt.Sprintf("otp:%s:%s", userID, purpose)
+}
+
+func (r *Repo) SetPasswordResetFlag(ctx context.Context, userId string, ttl time.Duration) error {
+	key := getPasswordResetKey(userId)
+	return r.client.Set(ctx, key, "true", ttl).Err()
+}
+
+func (r *Repo) CheckPasswordResetFlag(ctx context.Context, userId string) (bool, error) {
+	key := getPasswordResetKey(userId)
+	exists, err := r.client.Exists(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+	return exists > 0, nil
+}
+
+func (r *Repo) DeletePasswordResetFlag(ctx context.Context, userId string) error {
+	key := getPasswordResetKey(userId)
+	return r.client.Del(ctx, key).Err()
+}
+
+func (r *Repo) GetPasswordResetKey(userId string) string {
+	return fmt.Sprintf("password_reset_verified:%s", userId)
+}
+
+func getPasswordResetKey(userId string) string {
+	return fmt.Sprintf("password_reset_verified:%s", userId)
 }

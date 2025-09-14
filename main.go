@@ -26,20 +26,20 @@ import (
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-	logger.Error(server.ServerError.MissingEnvVars, err)
-	os.Exit(1)
+		logger.Error(server.Error.MissingEnvVars, err)
+		os.Exit(1)
 	}
 
 	// Database Initialization
 	if err := db.Init(); err != nil {
-		logger.Error(dbErr.DBError.ConnectionFailed, err)
+		logger.Error(dbErr.Error.ConnectionFailed, err)
 		os.Exit(1)
 	}
 
 	// Redis Initialization
 	redis.InitRedis()
-	if err := redis.RedisClient.Ping(context.Background()).Err(); err != nil {
-		logger.Error(dbErr.RedisError.ConnectionFailed, err)
+	if err := redis.Client.Ping(context.Background()).Err(); err != nil {
+		logger.Error(dbErr.Redis.ConnectionFailed, err)
 		os.Exit(1)
 	}
 	// Construct Services
@@ -48,7 +48,7 @@ func main() {
 	// Setup Router with request logging middleware and rate limiting
 	router := mux.NewRouter()
 	router.Use(request.Middleware)
-	router.Use(rate.RateLimit)
+	router.Use(rate.Limit)
 
 	// Health check endpoint
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -61,13 +61,13 @@ func main() {
 	handler.RegisterPublicRoutes(public, publicServices)
 
 	private := router.NewRoute().Subrouter()
-	private.Use(auth.AuthMiddleware) 
+	private.Use(auth.AuthMiddleware)
 	handler.RegisterPrivateRoutes(private, privateServices)
 
 	// Setup Port and Server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8443"
 	}
 	srv := &http.Server{
 		Addr:         ":" + port,
@@ -91,13 +91,13 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Error(server.ServerError.ShutdownFailed, err)
+			logger.Error(server.Error.ShutdownFailed, err)
 		}
 		close(idleConnsClosed)
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error(server.ServerError.HTTPServerError, err)
+	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && err != http.ErrServerClosed {
+		logger.Error(server.Error.HTTPServerError, err)
 	}
 
 	<-idleConnsClosed

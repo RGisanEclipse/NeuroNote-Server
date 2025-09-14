@@ -4,19 +4,20 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+
 	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
 )
 
 var (
-	emailRegex = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
-	uppercaseRegex = regexp.MustCompile(`.*[A-Z]+.*`)
-	lowercaseRegex = regexp.MustCompile(`.*[a-z]+.*`)
-	digitRegex = regexp.MustCompile(`.*[0-9]+.*`)
+	emailRegex       = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	uppercaseRegex   = regexp.MustCompile(`.*[A-Z]+.*`)
+	lowercaseRegex   = regexp.MustCompile(`.*[a-z]+.*`)
+	digitRegex       = regexp.MustCompile(`.*[0-9]+.*`)
 	specialCharRegex = regexp.MustCompile(`.*[!@#$%^&*(),.?\":{}|<>]+.*`)
-	whitespaceRegex = regexp.MustCompile(`.*\s+.*`)
+	whitespaceRegex  = regexp.MustCompile(`.*\s+.*`)
 )
 
-func (a *AuthRequest) Validate() error {
+func (a *Request) Validate() error {
 
 	if err := ValidateEmail(a.Email); err != nil {
 		return err
@@ -32,11 +33,11 @@ func (a *AuthRequest) Validate() error {
 func ValidateEmail(email string) error {
 
 	if strings.TrimSpace(email) == "" {
-		return errors.New(authErr.AuthError.EmailRequired)
+		return errors.New(authErr.Error.EmailRequired)
 	}
 
 	if !emailRegex.MatchString(email) {
-		return errors.New(authErr.AuthError.InvalidEmail)
+		return errors.New(authErr.Error.InvalidEmail)
 	}
 
 	return nil
@@ -45,38 +46,36 @@ func ValidateEmail(email string) error {
 func ValidatePassword(password string) error {
 
 	if strings.TrimSpace(password) == "" {
-		return errors.New(authErr.AuthError.PasswordRequired)
+		return errors.New(authErr.Error.PasswordRequired)
 	}
 
 	if len(password) < 8 {
-		return errors.New(authErr.AuthError.PasswordTooShort)
+		return errors.New(authErr.Error.PasswordTooShort)
 	}
 
 	if len(password) > 32 {
-		return errors.New(authErr.AuthError.PasswordTooLong)
+		return errors.New(authErr.Error.PasswordTooLong)
 	}
 
-	if !uppercaseRegex.MatchString(password){
-		return errors.New(authErr.AuthError.PasswordMissingUppercase)
+	if !uppercaseRegex.MatchString(password) {
+		return errors.New(authErr.Error.PasswordMissingUppercase)
 	}
 
 	if !lowercaseRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingLowercase)
+		return errors.New(authErr.Error.PasswordMissingLowercase)
 	}
 
 	if !digitRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingDigit)
+		return errors.New(authErr.Error.PasswordMissingDigit)
 	}
 
 	if !specialCharRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingSpecialCharacter)
+		return errors.New(authErr.Error.PasswordMissingSpecialCharacter)
 	}
-
 
 	if whitespaceRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordContainsWhitespace)
+		return errors.New(authErr.Error.PasswordContainsWhitespace)
 	}
-
 
 	return nil
 }

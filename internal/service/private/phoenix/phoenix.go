@@ -15,25 +15,25 @@ import (
 
 type Service struct {
 	userrepo user.Repository
-	client *BrevoClient
+	client   *BrevoClient
 }
 
 func New(userrepo user.Repository, client *BrevoClient) *Service {
 	return &Service{
 		userrepo: userrepo,
-		client: client,
+		client:   client,
 	}
 }
 
-func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.EmailTemplate) (error) {
+func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.EmailTemplate) error {
 	requestId := request.FromContext(ctx)
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.DBError.EmailQueryFailed, err, logger.Fields{
-			"userId": userId,
+		logger.Error(dbErr.Error.EmailQueryFailed, err, logger.Fields{
+			"userId":    userId,
 			"requestId": requestId,
 		})
-		return errors.New(dbErr.DBError.EmailQueryFailed)
+		return errors.New(dbErr.Error.EmailQueryFailed)
 	}
 
 	response, err := s.client.SendEmail(
@@ -43,33 +43,33 @@ func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.
 				Email: "rishab28guleria@gmail.com",
 			},
 			To: []phoenix.BrevoContact{
-			{
-				Email: email,
+				{
+					Email: email,
+				},
 			},
-		},
-			Subject: template.Subject,
+			Subject:     template.Subject,
 			HTMLContent: template.BodyHTML,
 		},
 	)
 	if err != nil {
-		logger.Error(phoenixErr.PhoenixErrorMessages.EmailDeliveryFailed, err, logrus.Fields{
-			"userId": userId,
-			"requestId": requestId,
+		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, err, logrus.Fields{
+			"userId":       userId,
+			"requestId":    requestId,
 			"errorMessage": err.Error(),
 		})
-		return errors.New(phoenixErr.PhoenixErrorMessages.EmailDeliveryFailed)
+		return errors.New(phoenixErr.ErrorMessages.EmailDeliveryFailed)
 	}
 	if !response.Success {
-		logger.Error(phoenixErr.PhoenixErrorMessages.EmailDeliveryFailed, nil, logrus.Fields{
-			"userId": userId,
-			"requestId": requestId,
-			"errorMessage": response.Message, 
+		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, nil, logrus.Fields{
+			"userId":       userId,
+			"requestId":    requestId,
+			"errorMessage": response.Message,
 		})
-		return errors.New(phoenixErr.PhoenixErrorMessages.EmailDeliveryFailed)
+		return errors.New(phoenixErr.ErrorMessages.EmailDeliveryFailed)
 	}
-	
+
 	logger.Info("Email sent successfully", logrus.Fields{
-		"userId": userId,
+		"userId":    userId,
 		"requestId": requestId,
 	})
 

@@ -2,38 +2,13 @@ name: Docker Build & Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build-and-run:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U $POSTGRES_USER"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=5s
-          --health-timeout=3s
-          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -42,7 +17,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
+
+      - name: Run tests
+        run: go test ./... -v
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -59,33 +37,80 @@ jobs:
           REDIS_PORT=6379
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}
-          PORT=8080
+          PORT=8443
           EOF
+
+      # === Decode HTTPS Certs ===
+      - name: Save SSL certs
+        run: |
+          mkdir certs
+          echo "${{ secrets.SSL_CERT }}" > certs/localhost.pem
+          echo "${{ secrets.SSL_KEY }}" > certs/localhost-key.pem
 
       - name: Build Docker image
         run: |
           docker build -t neuronote-server .
 
+      - name: Create Docker network
+        run: |
+          docker network create build-and-run_github_network
+
+      - name: Start PostgreSQL and Redis in custom network
+        run: |
+          docker run -d \
+            --name postgres \
+            --network build-and-run_github_network \
+            -e POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
+            -e POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
+            -e POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            postgres:16
+
+          docker run -d \
+            --name redis \
+            --network build-and-run_github_network \
+            redis:7
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for PostgreSQL..."
+          until docker exec postgres pg_isready -U ${{ secrets.POSTGRES_USER }}; do
+            sleep 2
+          done
+
+          echo "Waiting for Redis..."
+          until docker exec redis redis-cli ping; do
+            sleep 2
+          done
+
       - name: Run server container and wait for health
         run: |
-          network=$(docker network ls --filter name=github_network --format "{{.Name}}" | head -n 1)
-          
-          docker run -d --rm \
+          docker run -d \
             --name neuronote-app \
-            --network $network \
-            -p 8080:8080 \
+            --network build-and-run_github_network \
+            -v $PWD/certs:/app/certs:ro \
+            -p 8443:8443 \
             --env-file .env \
             neuronote-server
-          
-          sleep 5
-          
+
+          echo "Waiting for app health check on https://localhost:8443/health ..."
+
           for i in {1..15}; do
-            echo "Checking http://localhost:8080/health (attempt $i)..."
-            if curl --fail http://localhost:8080/health; then
+            echo "Checking https://localhost:8443/health (attempt $i)..."
+            if curl -k --fail https://localhost:8443/health; then
               echo "App is healthy!"
               exit 0
             fi
             sleep 4
           done
+
           echo "App health check failed after multiple attempts."
+          echo "==== Container logs ===="
+          docker logs neuronote-app
           exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop neuronote-app postgres redis || true
+          docker rm neuronote-app postgres redis || true
+          docker network rm build-and-run_github_network || true

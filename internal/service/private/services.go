@@ -1,31 +1,31 @@
 package private
 
 import (
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
 	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
 )
 
-type PrivateServices struct {
-	OTP otp.OTPService
+type Services struct {
+	OTP     otp.OTPService
 	Phoenix phoenixservice.PhoenixService
 }
 
-func New() *PrivateServices {
-	redisClient := redis.RedisClient
+func New() *Services {
+	redisClient := redis.Client
 	redisRepo := redis.NewRedisRepo(redisClient)
 
 	dbConn := db.GetDB()
 	userrepo := user.NewGormRepo(dbConn)
 
-	phoenixClient := phoenixservice.NewBrevoClient() 
+	phoenixClient := phoenixservice.NewBrevoClient()
 	phoenixService := phoenixservice.New(userrepo, phoenixClient)
 
 	otpService := otp.New(userrepo, redisRepo, phoenixService)
-	return &PrivateServices{
-		OTP: otpService,
+	return &Services{
+		OTP:     otpService,
 		Phoenix: phoenixService,
 	}
 }

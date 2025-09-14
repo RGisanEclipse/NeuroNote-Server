@@ -1,26 +1,32 @@
 package public
 
 import (
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
+	otpservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
+	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
 )
 
-type PublicServices struct {
-	Auth auth.AuthService 
+type Services struct {
+	Auth auth.S
 }
 
-func New() *PublicServices {
+func New() *Services {
 	dbConn := db.GetDB()
-	redisClient := redis.RedisClient
+	redisClient := redis.Client
 
-	userRepo := user.NewGormRepo(dbConn)
+	userrepo := user.NewGormRepo(dbConn)
 	redisRepo := redis.NewRedisRepo(redisClient)
 
-	authService := auth.New(userRepo, redisRepo)
+	phoenixClient := phoenixservice.NewBrevoClient()
+	phoenixService := phoenixservice.New(userrepo, phoenixClient)
 
-	return &PublicServices{
+	otpService := otpservice.New(userrepo, redisRepo, phoenixService)
+	authService := auth.New(userrepo, redisRepo, otpService)
+
+	return &Services{
 		Auth: authService,
 	}
 }

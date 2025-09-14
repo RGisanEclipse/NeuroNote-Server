@@ -2,11 +2,11 @@ package phoenix
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
-	"context"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
@@ -28,22 +28,22 @@ func NewBrevoClient() *BrevoClient {
 
 var baseURL = "https://api.brevo.com/v3/smtp/email"
 
-func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoRequest) (phoenix.PhoenixResponse, error) {
+func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoRequest) (phoenix.Response, error) {
 	bodyBytes, err := json.Marshal(request)
 	if err != nil {
-		logger.Error(serverErr.ServerError.JSONMarshalError, err)
-		return phoenix.PhoenixResponse{
+		logger.Error(serverErr.Error.JSONMarshalError, err)
+		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.ServerError.JSONMarshalError,
+			Error:   serverErr.Error.JSONMarshalError,
 		}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", baseURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logger.Error(serverErr.ServerError.RequestCreationFailure, err)
-		return phoenix.PhoenixResponse{
+		logger.Error(serverErr.Error.RequestCreationFailure, err)
+		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.ServerError.RequestCreationFailure,
+			Error:   serverErr.Error.RequestCreationFailure,
 		}, err
 	}
 
@@ -52,26 +52,26 @@ func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoReques
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		logger.Error(serverErr.ServerError.RequestDeliveryFailure, err)
-		return phoenix.PhoenixResponse{
+		logger.Error(serverErr.Error.RequestDeliveryFailure, err)
+		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.ServerError.RequestDeliveryFailure,
+			Error:   serverErr.Error.RequestDeliveryFailure,
 		}, err
 	}
 	defer resp.Body.Close()
 
 	var brevoResponse phoenix.BrevoResponse
 	if err := json.NewDecoder(resp.Body).Decode(&brevoResponse); err != nil {
-		logger.Error(serverErr.ServerError.JSONUnmarshalError, err)
-		return phoenix.PhoenixResponse{
+		logger.Error(serverErr.Error.JSONUnmarshalError, err)
+		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.ServerError.JSONUnmarshalError,
+			Error:   serverErr.Error.JSONUnmarshalError,
 		}, err
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		logger.Error(serverErr.ServerError.Non200ResponseError, nil)
-		return phoenix.PhoenixResponse{
+		logger.Error(serverErr.Error.Non200ResponseError, nil)
+		return phoenix.Response{
 			Success: false,
 			Error:   brevoResponse.Message,
 		}, errors.New(brevoResponse.Message)
@@ -79,7 +79,7 @@ func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoReques
 	logger.Info("Email sent successfully", logrus.Fields{
 		"messageId": brevoResponse.MessageId,
 	})
-	return phoenix.PhoenixResponse{
+	return phoenix.Response{
 		Success:   true,
 		MessageId: brevoResponse.MessageId,
 	}, nil
