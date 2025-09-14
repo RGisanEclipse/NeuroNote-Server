@@ -16,4 +16,5 @@ type Repository interface {
 	IsUserVerified(ctx context.Context, userId string) (bool, error)
 	GetUserEmailById(ctx context.Context, userId string) (string, error)
 	MarkUserVerified(ctx context.Context, userId string) error
+	ResetPassword(ctx context.Context, userId, password string) error
 }

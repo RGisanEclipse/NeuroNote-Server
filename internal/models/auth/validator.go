@@ -4,19 +4,20 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+
 	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
 )
 
 var (
-	emailRegex = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
-	uppercaseRegex = regexp.MustCompile(`.*[A-Z]+.*`)
-	lowercaseRegex = regexp.MustCompile(`.*[a-z]+.*`)
-	digitRegex = regexp.MustCompile(`.*[0-9]+.*`)
+	emailRegex       = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	uppercaseRegex   = regexp.MustCompile(`.*[A-Z]+.*`)
+	lowercaseRegex   = regexp.MustCompile(`.*[a-z]+.*`)
+	digitRegex       = regexp.MustCompile(`.*[0-9]+.*`)
 	specialCharRegex = regexp.MustCompile(`.*[!@#$%^&*(),.?\":{}|<>]+.*`)
-	whitespaceRegex = regexp.MustCompile(`.*\s+.*`)
+	whitespaceRegex  = regexp.MustCompile(`.*\s+.*`)
 )
 
-func (a *AuthRequest) Validate() error {
+func (a *Request) Validate() error {
 
 	if err := ValidateEmail(a.Email); err != nil {
 		return err
@@ -56,7 +57,7 @@ func ValidatePassword(password string) error {
 		return errors.New(authErr.AuthError.PasswordTooLong)
 	}
 
-	if !uppercaseRegex.MatchString(password){
+	if !uppercaseRegex.MatchString(password) {
 		return errors.New(authErr.AuthError.PasswordMissingUppercase)
 	}
 
@@ -72,11 +73,9 @@ func ValidatePassword(password string) error {
 		return errors.New(authErr.AuthError.PasswordMissingSpecialCharacter)
 	}
 
-
 	if whitespaceRegex.MatchString(password) {
 		return errors.New(authErr.AuthError.PasswordContainsWhitespace)
 	}
-
 
 	return nil
 }

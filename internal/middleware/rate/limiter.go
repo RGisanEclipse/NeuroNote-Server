@@ -17,7 +17,7 @@ import (
 
 const rateLimitWindow = time.Minute
 
-func RateLimit(next http.Handler) http.Handler {
+func Limit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {

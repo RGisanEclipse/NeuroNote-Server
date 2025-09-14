@@ -1,6 +1,6 @@
 package auth
 
-type SignupOTPVerifyRequest struct {
+type OTPVerifyRequest struct {
 	UserId string `json:"userId"`
 	Code   string `json:"code"`
 }

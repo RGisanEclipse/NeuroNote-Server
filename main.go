@@ -26,8 +26,8 @@ import (
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-	logger.Error(server.ServerError.MissingEnvVars, err)
-	os.Exit(1)
+		logger.Error(server.ServerError.MissingEnvVars, err)
+		os.Exit(1)
 	}
 
 	// Database Initialization
@@ -48,7 +48,7 @@ func main() {
 	// Setup Router with request logging middleware and rate limiting
 	router := mux.NewRouter()
 	router.Use(request.Middleware)
-	router.Use(rate.RateLimit)
+	router.Use(rate.Limit)
 
 	// Health check endpoint
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +61,7 @@ func main() {
 	handler.RegisterPublicRoutes(public, publicServices)
 
 	private := router.NewRoute().Subrouter()
-	private.Use(auth.AuthMiddleware) 
+	private.Use(auth.AuthMiddleware)
 	handler.RegisterPrivateRoutes(private, privateServices)
 
 	// Setup Port and Server
@@ -97,7 +97,7 @@ func main() {
 	}()
 
 	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && err != http.ErrServerClosed {
-    logger.Error(server.ServerError.HTTPServerError, err)
+		logger.Error(server.ServerError.HTTPServerError, err)
 	}
 
 	<-idleConnsClosed

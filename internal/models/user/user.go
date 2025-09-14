@@ -1,13 +1,13 @@
 package user
 
-type UserModel struct {
+type Model struct {
 	UserID       string `gorm:"primaryKey;size:14"`
-	Email        string    `gorm:"uniqueIndex;size:255;not null"`
-	PasswordHash string    `gorm:"size:255;not null"`
-	IsVerified   bool      `gorm:"not null;default:false"`
+	Email        string `gorm:"uniqueIndex;size:255;not null"`
+	PasswordHash string `gorm:"size:255;not null"`
+	IsVerified   bool   `gorm:"not null;default:false"`
 	CreatedAt    int64  `gorm:"autoCreateTime"`
 }
 
-func (UserModel) TableName() string {
+func (Model) TableName() string {
 	return "users"
 }

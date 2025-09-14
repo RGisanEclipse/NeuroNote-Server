@@ -49,6 +49,11 @@ func (m *MockUserRepo) MarkUserVerified(ctx context.Context, userID string) erro
 	return args.Error(0)
 }
 
+func (m *MockUserRepo) ResetPassword(ctx context.Context, userId, password string) error {
+	args := m.Called(ctx, userId, password)
+	return args.Error(0)
+}
+
 
 type MockRedisRepo struct {
 	mock.Mock

@@ -23,13 +23,13 @@ import (
 // Mock service that satisfies authservice.Service
 type mockAuthService struct{ mock.Mock }
 
-func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.AuthServiceResponse, error) {
+func (m *mockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.ServiceResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.Get(0).(authmodel.AuthServiceResponse), args.Error(1)
+	return args.Get(0).(authmodel.ServiceResponse), args.Error(1)
 }
-func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.AuthServiceResponse, error) {
+func (m *mockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.ServiceResponse, error) {
 	args := m.Called(ctx, email, pw)
-	return args.Get(0).(authmodel.AuthServiceResponse), args.Error(1)
+	return args.Get(0).(authmodel.ServiceResponse), args.Error(1)
 }
 
 func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string) (authmodel.RefreshTokenServiceResponse, error) {
@@ -37,14 +37,29 @@ func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string)
 	return args.Get(0).(authmodel.RefreshTokenServiceResponse), args.Error(1)
 }
 
-func (m *mockAuthService) SignupOTP(ctx context.Context, userId string) (authmodel.SignupOTPResponse, error) {
+func (m *mockAuthService) SignupOTP(ctx context.Context, userId string) (authmodel.OTPResponse, error) {
 	args := m.Called(ctx, userId)
-	return args.Get(0).(authmodel.SignupOTPResponse), args.Error(1)
+	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
 }
 
-func (m *mockAuthService) SignupOTPVerify(ctx context.Context, userId, code string) (authmodel.SignupOTPResponse, error) {
+func (m *mockAuthService) SignupOTPVerify(ctx context.Context, userId, code string) (authmodel.OTPResponse, error) {
 	args := m.Called(ctx, userId, code)
-	return args.Get(0).(authmodel.SignupOTPResponse), args.Error(1)
+	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
+}
+
+func (m *mockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.OTPResponse, error) {
+	args := m.Called(ctx, email)
+	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
+}
+
+func (m *mockAuthService) ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authmodel.ForgotPasswordResponse, error) {
+	args := m.Called(ctx, userId, code)
+	return args.Get(0).(authmodel.ForgotPasswordResponse), args.Error(1)
+}
+
+func (m *mockAuthService) ResetPassword(ctx context.Context, userId, password string) (authmodel.ResetPasswordResponse, error) {
+	args := m.Called(ctx, userId, password)
+	return args.Get(0).(authmodel.ResetPasswordResponse), args.Error(1)
 }
 
 // Signup handler tests
@@ -52,142 +67,142 @@ func (m *mockAuthService) SignupOTPVerify(ctx context.Context, userId, code stri
 func TestSignupHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		request        authmodel.AuthRequest
-		mockReturn     *authmodel.AuthServiceResponse
+		request        authmodel.Request
+		mockReturn     *authmodel.ServiceResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.AuthResponse
+		expectedBody   *authmodel.Response
 		expectCall     bool
 	}{
 		{
-			name: "Success",
-			request: authmodel.AuthRequest{Email: "test@example.com", Password: "validPass@1234"},
-			mockReturn: &authmodel.AuthServiceResponse{
-				Success: true,
-				Message: "Account created succesfully",
+			name:    "Success",
+			request: authmodel.Request{Email: "test@example.com", Password: "validPass@1234"},
+			mockReturn: &authmodel.ServiceResponse{
+				Success:     true,
+				Message:     "Account created succesfully",
 				AccessToken: "random-jwt-token",
-				IsVerified: false,
+				IsVerified:  false,
 			},
-			mockError: nil,
+			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.AuthResponse{
-				Success: true,
-				Message: "Account created succesfully",
+			expectedBody: &authmodel.Response{
+				Success:     true,
+				Message:     "Account created succesfully",
 				AccessToken: "random-jwt-token",
-				IsVerified: false,
+				IsVerified:  false,
 			},
 			expectCall: true,
 		},
 		{
-			name: "EmailExists",
-			request: authmodel.AuthRequest{Email: "exists@example.com", Password: "validPass@1234"},
-			mockReturn: &authmodel.AuthServiceResponse{
+			name:    "EmailExists",
+			request: authmodel.Request{Email: "exists@example.com", Password: "validPass@1234"},
+			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.EmailExists,
 			},
-			mockError: errors.New(authErr.AuthError.EmailExists),
+			mockError:      errors.New(authErr.AuthError.EmailExists),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.EmailExists,
 			},
 			expectCall: true,
 		},
 		{
-			name: "MissingEmail",
-			request: authmodel.AuthRequest{Password: "123456"},
+			name:           "MissingEmail",
+			request:        authmodel.Request{Password: "123456"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.EmailRequired,
 			},
 			expectCall: false,
 		},
 		{
-			name: "MissingPassword",
-			request: authmodel.AuthRequest{Email: "user@example.com"},
+			name:           "MissingPassword",
+			request:        authmodel.Request{Email: "user@example.com"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordRequired,
 			},
 			expectCall: false,
 		},
 		{
-			name: "InvalidEmailFormat",
-			request: authmodel.AuthRequest{Email: "invalidemail.com", Password: "ValidPass@123"},
+			name:           "InvalidEmailFormat",
+			request:        authmodel.Request{Email: "invalidemail.com", Password: "ValidPass@123"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.InvalidEmail,
 			},
 			expectCall: false,
 		},
 		{
-			name: "ShortPassword",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "123456"},
+			name:           "ShortPassword",
+			request:        authmodel.Request{Email: "a@b.com", Password: "123456"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordTooShort,
 			},
 			expectCall: false,
 		},
 		{
-			name: "LongPassword",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "VeryLongPasswordWithAllComponents@12345678999999999999"},
+			name:           "LongPassword",
+			request:        authmodel.Request{Email: "a@b.com", Password: "VeryLongPasswordWithAllComponents@12345678999999999999"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordTooLong,
 			},
 			expectCall: false,
 		},
 		{
-			name: "PasswordWithoutUppercase",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "lowercase@123"},
+			name:           "PasswordWithoutUppercase",
+			request:        authmodel.Request{Email: "a@b.com", Password: "lowercase@123"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordMissingUppercase,
 			},
 			expectCall: false,
 		},
 		{
-			name: "PasswordWithoutLowercase",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "UPPERCASE@123"},
+			name:           "PasswordWithoutLowercase",
+			request:        authmodel.Request{Email: "a@b.com", Password: "UPPERCASE@123"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordMissingLowercase,
 			},
 			expectCall: false,
 		},
 		{
-			name: "PasswordWithoutDigit",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "Password@"},
+			name:           "PasswordWithoutDigit",
+			request:        authmodel.Request{Email: "a@b.com", Password: "Password@"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordMissingDigit,
 			},
 			expectCall: false,
 		},
 		{
-			name: "PasswordWithoutSpecialChar",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "Password123"},
+			name:           "PasswordWithoutSpecialChar",
+			request:        authmodel.Request{Email: "a@b.com", Password: "Password123"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordMissingSpecialCharacter,
 			},
 			expectCall: false,
 		},
 		{
-			name: "PasswordWithWhitespace",
-			request: authmodel.AuthRequest{Email: "a@b.com", Password: "Valid Pass@123"},
+			name:           "PasswordWithWhitespace",
+			request:        authmodel.Request{Email: "a@b.com", Password: "Valid Pass@123"},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.PasswordContainsWhitespace,
 			},
@@ -213,7 +228,7 @@ func TestSignupHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.AuthResponse
+			var resp authmodel.Response
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -228,61 +243,60 @@ func TestSignupHandler(t *testing.T) {
 
 // Signin handler tests
 
-
 func TestSigninHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		request        authmodel.AuthRequest
-		mockReturn     *authmodel.AuthServiceResponse
+		request        authmodel.Request
+		mockReturn     *authmodel.ServiceResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.AuthResponse
+		expectedBody   *authmodel.Response
 		expectCall     bool
 	}{
 		{
-			name: "Success",
-			request: authmodel.AuthRequest{Email: "user@example.com", Password: "123456"},
-			mockReturn: &authmodel.AuthServiceResponse{
-				Success: true,
-				Message: "Logged in successfully",
+			name:    "Success",
+			request: authmodel.Request{Email: "user@example.com", Password: "123456"},
+			mockReturn: &authmodel.ServiceResponse{
+				Success:     true,
+				Message:     "Logged in successfully",
 				AccessToken: "valid-jwt-token",
-				IsVerified: false,
+				IsVerified:  false,
 			},
-			mockError: nil,
+			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.AuthResponse{
-				Success: true,
-				Message: "Logged in successfully",
+			expectedBody: &authmodel.Response{
+				Success:     true,
+				Message:     "Logged in successfully",
 				AccessToken: "valid-jwt-token",
-				IsVerified: false,
+				IsVerified:  false,
 			},
 			expectCall: true,
 		},
 		{
-			name: "WrongPassword",
-			request: authmodel.AuthRequest{Email: "user@example.com", Password: "wrong"},
-			mockReturn: &authmodel.AuthServiceResponse{
+			name:    "WrongPassword",
+			request: authmodel.Request{Email: "user@example.com", Password: "wrong"},
+			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.IncorrectPassword,
 			},
-			mockError: errors.New(authErr.AuthError.IncorrectPassword),
+			mockError:      errors.New(authErr.AuthError.IncorrectPassword),
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.IncorrectPassword,
 			},
 			expectCall: true,
 		},
 		{
-			name: "EmailDoesNotExist",
-			request: authmodel.AuthRequest{Email: "ghost@example.com", Password: "123456"},
-			mockReturn: &authmodel.AuthServiceResponse{
+			name:    "EmailDoesNotExist",
+			request: authmodel.Request{Email: "ghost@example.com", Password: "123456"},
+			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
 				Message: authErr.AuthError.EmailDoesntExist,
 			},
-			mockError: errors.New(authErr.AuthError.EmailDoesntExist),
+			mockError:      errors.New(authErr.AuthError.EmailDoesntExist),
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody: &authmodel.AuthResponse{
+			expectedBody: &authmodel.Response{
 				Success: false,
 				Message: authErr.AuthError.EmailDoesntExist,
 			},
@@ -308,7 +322,7 @@ func TestSigninHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.AuthResponse
+			var resp authmodel.Response
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -326,10 +340,10 @@ func TestSignupOTPHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.SignupOTPRequest
-		mockReturn     *authmodel.SignupOTPResponse
+		mockReturn     *authmodel.OTPResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.SignupOTPResponse
+		expectedBody   *authmodel.OTPResponse
 		expectCall     bool
 	}{
 		{
@@ -337,13 +351,13 @@ func TestSignupOTPHandler(t *testing.T) {
 			request: authmodel.SignupOTPRequest{
 				UserId: "user123",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
@@ -355,7 +369,7 @@ func TestSignupOTPHandler(t *testing.T) {
 				UserId: "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
@@ -366,23 +380,23 @@ func TestSignupOTPHandler(t *testing.T) {
 			request: authmodel.SignupOTPRequest{
 				UserId: "user123",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.InternalError,
 			},
 			mockError:      errors.New(serverErr.ServerError.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.InternalError,
 			},
 			expectCall: true,
 		},
 		{
-			name: "InvalidRequestBody",
-			request: authmodel.SignupOTPRequest{},
+			name:           "InvalidRequestBody",
+			request:        authmodel.SignupOTPRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
@@ -409,7 +423,7 @@ func TestSignupOTPHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.SignupOTPResponse
+			var resp authmodel.OTPResponse
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -427,26 +441,26 @@ func TestSignupOTPHandler(t *testing.T) {
 func TestSignupOTPVerifyHandler(t *testing.T) {
 	tests := []struct {
 		name           string
-		request        authmodel.SignupOTPVerifyRequest
-		mockReturn     *authmodel.SignupOTPResponse
+		request        authmodel.OTPVerifyRequest
+		mockReturn     *authmodel.OTPResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.SignupOTPResponse
+		expectedBody   *authmodel.OTPResponse
 		expectCall     bool
 	}{
 		{
 			name: "Success_WithUserVerification",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -454,17 +468,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "InvalidOTP_NoUserVerification",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "wrong123",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: otpErr.OTPError.InvalidOTP,
 			},
 			mockError:      errors.New(otpErr.OTPError.InvalidOTP),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: otpErr.OTPError.InvalidOTP,
 			},
@@ -472,17 +486,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "OTPExpiredOrNotFound_NoUserVerification",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: otpErr.OTPError.OTPExpiredOrNotFound,
 			},
 			mockError:      errors.New(otpErr.OTPError.OTPExpiredOrNotFound),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: otpErr.OTPError.OTPExpiredOrNotFound,
 			},
@@ -490,17 +504,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "OTPVerificationFailure_NoUserVerification",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil, // OTP service returns success=false but no error
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -508,17 +522,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "UserVerificationDatabaseError",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: "Failed to mark user as verified",
 			},
 			mockError:      nil, // OTP verification succeeds but user verification fails
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: "Failed to mark user as verified",
 			},
@@ -526,12 +540,12 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "EmptyUserId",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "",
 				Code:   "123456",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
@@ -539,12 +553,12 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "EmptyCode",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
@@ -552,22 +566,22 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "EmptyUserIdAndCode",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "",
 				Code:   "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
 			expectCall: false,
 		},
 		{
-			name: "InvalidRequestBody",
-			request: authmodel.SignupOTPVerifyRequest{},
+			name:           "InvalidRequestBody",
+			request:        authmodel.OTPVerifyRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.BadRequest,
 			},
@@ -575,17 +589,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "InternalServerError_OTPService",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.InternalError,
 			},
 			mockError:      errors.New(serverErr.ServerError.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: serverErr.ServerError.InternalError,
 			},
@@ -593,17 +607,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "VeryLongUserId",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "very-long-user-id-that-exceeds-normal-limits-and-might-cause-issues-in-some-systems",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -611,17 +625,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "VeryLongCode",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "1234567890123456789012345678901234567890",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -629,17 +643,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "SpecialCharactersInUserId",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user-123_test@domain",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -647,17 +661,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "SpecialCharactersInCode",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   "123@456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -665,17 +679,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "WhitespaceInUserId",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: " user123 ",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -683,17 +697,17 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 		},
 		{
 			name: "WhitespaceInCode",
-			request: authmodel.SignupOTPVerifyRequest{
+			request: authmodel.OTPVerifyRequest{
 				UserId: "user123",
 				Code:   " 123456 ",
 			},
-			mockReturn: &authmodel.SignupOTPResponse{
+			mockReturn: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.SignupOTPResponse{
+			expectedBody: &authmodel.OTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -720,7 +734,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.SignupOTPResponse
+			var resp authmodel.OTPResponse
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -766,22 +780,22 @@ func TestRefreshTokenHandler(t *testing.T) {
 			request: authmodel.RefreshTokenRequest{
 				RefreshToken: "invalid-token",
 			},
-			mockReturn: &authmodel.RefreshTokenServiceResponse{},
+			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
 			mockError:      errors.New(authErr.AuthError.InvalidRefreshToken),
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody: &authmodel.RefreshTokenResponse{},
-			expectCall: true,
+			expectedBody:   &authmodel.RefreshTokenResponse{},
+			expectCall:     true,
 		},
 		{
 			name: "RefreshTokenMismatch",
 			request: authmodel.RefreshTokenRequest{
 				RefreshToken: "mismatched-token",
 			},
-			mockReturn: &authmodel.RefreshTokenServiceResponse{},
+			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
 			mockError:      errors.New(authErr.AuthError.RefreshTokenMismatch),
 			expectedStatus: http.StatusUnauthorized,
-			expectedBody: &authmodel.RefreshTokenResponse{},
-			expectCall: true,
+			expectedBody:   &authmodel.RefreshTokenResponse{},
+			expectCall:     true,
 		},
 		{
 			name: "EmptyRefreshToken",
@@ -789,26 +803,26 @@ func TestRefreshTokenHandler(t *testing.T) {
 				RefreshToken: "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.RefreshTokenResponse{},
-			expectCall: false,
+			expectedBody:   &authmodel.RefreshTokenResponse{},
+			expectCall:     false,
 		},
 		{
-			name: "InvalidRequestBody",
-			request: authmodel.RefreshTokenRequest{},
+			name:           "InvalidRequestBody",
+			request:        authmodel.RefreshTokenRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.RefreshTokenResponse{},
-			expectCall: false,
+			expectedBody:   &authmodel.RefreshTokenResponse{},
+			expectCall:     false,
 		},
 		{
 			name: "InternalServerError",
 			request: authmodel.RefreshTokenRequest{
 				RefreshToken: "valid-token",
 			},
-			mockReturn: &authmodel.RefreshTokenServiceResponse{},
+			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
 			mockError:      errors.New(serverErr.ServerError.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.RefreshTokenResponse{},
-			expectCall: true,
+			expectedBody:   &authmodel.RefreshTokenResponse{},
+			expectCall:     true,
 		},
 	}
 
@@ -842,6 +856,414 @@ func TestRefreshTokenHandler(t *testing.T) {
 			} else {
 				mockSvc.AssertNotCalled(t, "RefreshToken")
 			}
+		})
+	}
+}
+
+// ForgotPasswordOTP handler tests
+func TestForgotPasswordOTPHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        authmodel.ForgotPasswordOTPRequest
+		mockReturn     *authmodel.OTPResponse
+		mockError      error
+		expectedStatus int
+		expectedBody   *authmodel.OTPResponse
+		expectCall     bool
+	}{
+		{
+			name: "ValidRequest",
+			request: authmodel.ForgotPasswordOTPRequest{
+				Email: "test@example.com",
+			},
+			mockReturn: &authmodel.OTPResponse{
+				Success: true,
+				Message: "OTP sent successfully",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.OTPResponse{
+				Success: true,
+				Message: "OTP sent successfully",
+			},
+			expectCall: true,
+		},
+		{
+			name: "EmailDoesNotExist",
+			request: authmodel.ForgotPasswordOTPRequest{
+				Email: "nonexistent@example.com",
+			},
+			mockReturn: &authmodel.OTPResponse{
+				Success: false,
+				Message: authErr.AuthError.EmailDoesntExist,
+			},
+			mockError:      errors.New(authErr.AuthError.EmailDoesntExist),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: &authmodel.OTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.InternalError,
+			},
+			expectCall: true,
+		},
+		{
+			name: "EmptyEmail",
+			request: authmodel.ForgotPasswordOTPRequest{
+				Email: "",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.OTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
+			name:           "InvalidRequestBody",
+			request:        authmodel.ForgotPasswordOTPRequest{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.OTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
+			name: "OTPSendFailure",
+			request: authmodel.ForgotPasswordOTPRequest{
+				Email: "test@example.com",
+			},
+			mockReturn: &authmodel.OTPResponse{
+				Success: false,
+				Message: authErr.AuthError.OTPSendFailure,
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.OTPResponse{
+				Success: false,
+				Message: authErr.AuthError.OTPSendFailure,
+			},
+			expectCall: true,
+		},
+		{
+			name: "InternalServiceError",
+			request: authmodel.ForgotPasswordOTPRequest{
+				Email: "test@example.com",
+			},
+			mockReturn:     &authmodel.OTPResponse{},
+			mockError:      errors.New(serverErr.ServerError.InternalError),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: &authmodel.OTPResponse{
+				Success: false,
+				Message: serverErr.ServerError.InternalError,
+			},
+			expectCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := new(mockAuthService)
+			if tt.expectCall {
+				mockSvc.On("ForgotPasswordOTP", mock.Anything, tt.request.Email).
+					Return(*tt.mockReturn, tt.mockError).Once()
+			}
+
+			r := mux.NewRouter()
+			authhandler.RegisterAuthRoutes(r, mockSvc)
+
+			body, _ := json.Marshal(tt.request)
+			req := httptest.NewRequest("POST", "/api/v1/auth/password/otp", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			r.ServeHTTP(rec, req)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			var resp authmodel.OTPResponse
+			_ = json.NewDecoder(rec.Body).Decode(&resp)
+			assert.Equal(t, tt.expectedBody.Success, resp.Success)
+			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+
+			mockSvc.AssertExpectations(t)
+		})
+	}
+}
+
+// ForgotPasswordOTPVerify handler tests
+func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        authmodel.OTPVerifyRequest
+		mockReturn     *authmodel.ForgotPasswordResponse
+		mockError      error
+		expectedStatus int
+		expectedBody   *authmodel.ForgotPasswordResponse
+		expectCall     bool
+	}{
+		{
+			name: "ValidRequest",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.ForgotPasswordResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+				UserId:  "user123",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: true,
+				Message: "OTP verified successfully",
+				UserId:  "user123",
+			},
+			expectCall: true,
+		},
+		{
+			name: "InvalidOTP",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "user123",
+				Code:   "wrong123",
+			},
+			mockReturn: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: otpErr.OTPError.InvalidOTP,
+			},
+			mockError:      errors.New(otpErr.OTPError.InvalidOTP),
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: otpErr.OTPError.InvalidOTP,
+			},
+			expectCall: true,
+		},
+		{
+			name: "OTPExpiredOrNotFound",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123456",
+			},
+			mockReturn: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: otpErr.OTPError.OTPExpiredOrNotFound,
+			},
+			mockError:      errors.New(otpErr.OTPError.OTPExpiredOrNotFound),
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: otpErr.OTPError.OTPExpiredOrNotFound,
+			},
+			expectCall: true,
+		},
+		{
+			name: "EmptyUserId",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "",
+				Code:   "123456",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
+			name: "EmptyCode",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "user123",
+				Code:   "",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
+			name:           "InvalidRequestBody",
+			request:        authmodel.OTPVerifyRequest{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: serverErr.ServerError.BadRequest,
+			},
+			expectCall: false,
+		},
+		{
+			name: "InternalServerError",
+			request: authmodel.OTPVerifyRequest{
+				UserId: "user123",
+				Code:   "123456",
+			},
+			mockReturn:     &authmodel.ForgotPasswordResponse{},
+			mockError:      errors.New(serverErr.ServerError.InternalError),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: &authmodel.ForgotPasswordResponse{
+				Success: false,
+				Message: serverErr.ServerError.InternalError,
+			},
+			expectCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := new(mockAuthService)
+			if tt.expectCall {
+				mockSvc.On("ForgotPasswordOTPVerify", mock.Anything, tt.request.UserId, tt.request.Code).
+					Return(*tt.mockReturn, tt.mockError).Once()
+			}
+
+			r := mux.NewRouter()
+			authhandler.RegisterAuthRoutes(r, mockSvc)
+
+			body, _ := json.Marshal(tt.request)
+			req := httptest.NewRequest("POST", "/api/v1/auth/password/otp/verify", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			r.ServeHTTP(rec, req)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			var resp authmodel.ForgotPasswordResponse
+			_ = json.NewDecoder(rec.Body).Decode(&resp)
+			assert.Equal(t, tt.expectedBody.Success, resp.Success)
+			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			assert.Equal(t, tt.expectedBody.UserId, resp.UserId)
+
+			mockSvc.AssertExpectations(t)
+		})
+	}
+}
+
+// PasswordReset handler tests
+func TestPasswordResetHandler(t *testing.T) {
+	tests := []struct {
+		name           string
+		request        authmodel.ResetPasswordRequest
+		mockReturn     *authmodel.ResetPasswordResponse
+		mockError      error
+		expectedStatus int
+		expectedBody   *authmodel.ResetPasswordResponse
+		expectCall     bool
+	}{
+		{
+			name: "ValidRequest",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "newpassword123",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: true,
+				Message: "Password Reset successfully",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: true,
+				Message: "Password Reset successfully",
+			},
+			expectCall: true,
+		},
+		{
+			name: "PasswordResetFailure",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "newpassword123",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Failed to reset password",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Failed to reset password",
+			},
+			expectCall: true,
+		},
+		{
+			name: "EmptyUserId",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "",
+				Password: "newpassword123",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Invalid userId",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Invalid userId",
+			},
+			expectCall: false,
+		},
+		{
+			name: "EmptyPassword",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "",
+			},
+			mockReturn: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Failed to reset password",
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Failed to reset password",
+			},
+			expectCall: true,
+		},
+		{
+			name:           "InvalidRequestBody",
+			request:        authmodel.ResetPasswordRequest{},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: &authmodel.ResetPasswordResponse{
+				Success: false,
+				Message: "Invalid userId",
+			},
+			expectCall: false,
+		},
+		{
+			name: "InternalServerError",
+			request: authmodel.ResetPasswordRequest{
+				UserId:   "user1234567890",
+				Password: "newpassword123",
+			},
+			mockReturn:     &authmodel.ResetPasswordResponse{},
+			mockError:      errors.New(serverErr.ServerError.InternalError),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   &authmodel.ResetPasswordResponse{},
+			expectCall:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := new(mockAuthService)
+			if tt.expectCall {
+				mockSvc.On("ResetPassword", mock.Anything, tt.request.UserId, tt.request.Password).
+					Return(*tt.mockReturn, tt.mockError).Once()
+			}
+
+			r := mux.NewRouter()
+			authhandler.RegisterAuthRoutes(r, mockSvc)
+
+			body, _ := json.Marshal(tt.request)
+			req := httptest.NewRequest("POST", "/api/v1/auth/password/reset", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			r.ServeHTTP(rec, req)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			var resp authmodel.ResetPasswordResponse
+			_ = json.NewDecoder(rec.Body).Decode(&resp)
+			assert.Equal(t, tt.expectedBody.Success, resp.Success)
+			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+
+			mockSvc.AssertExpectations(t)
 		})
 	}
 }
