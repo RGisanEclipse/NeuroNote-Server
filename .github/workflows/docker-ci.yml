@@ -77,7 +77,7 @@ jobs:
         run: |
           docker run -d \
             --name neuronote-app \
-            --network ${{ job.services.postgres.id }} \
+            --network build-and-run_github_network \
             -v $PWD/certs:/app/certs:ro \
             -p 8443:8443 \
             --env-file .env \
