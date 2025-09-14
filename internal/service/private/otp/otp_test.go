@@ -5,98 +5,15 @@ import (
 	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
+	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
 )
 
-// Mock dependencies
-type MockUserRepo struct {
-	mock.Mock
-}
-
-func (m *MockUserRepo) UserExists(ctx context.Context, email string) (bool, error) {
-	args := m.Called(ctx, email)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockUserRepo) CreateUser(ctx context.Context, email, passwordHash, userId string) (bool, error) {
-	args := m.Called(ctx, email, passwordHash, userId)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockUserRepo) GetUserCreds(ctx context.Context, email string) (*userrepo.Creds, error) {
-	args := m.Called(ctx, email)
-	return args.Get(0).(*userrepo.Creds), args.Error(1)
-}
-
-func (m *MockUserRepo) IsUserVerified(ctx context.Context, userId string) (bool, error) {
-	args := m.Called(ctx, userId)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockUserRepo) GetUserEmailById(ctx context.Context, userID string) (string, error) {
-	args := m.Called(ctx, userID)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockUserRepo) MarkUserVerified(ctx context.Context, userID string) error {
-	args := m.Called(ctx, userID)
-	return args.Error(0)
-}
-
-func (m *MockUserRepo) ResetPassword(ctx context.Context, userId, password string) error {
-	args := m.Called(ctx, userId, password)
-	return args.Error(0)
-}
-
-
-type MockRedisRepo struct {
-	mock.Mock
-}
-
-func (m *MockRedisRepo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
-	args := m.Called(ctx, userID, token, expiry)
-	return args.Error(0)
-}
-
-func (m *MockRedisRepo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
-	args := m.Called(ctx, userID)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockRedisRepo) DeleteRefreshToken(ctx context.Context, userID string) error {
-	args := m.Called(ctx, userID)
-	return args.Error(0)
-}
-
-func (m *MockRedisRepo) SetOTP(ctx context.Context, userID string, otp string, ttl time.Duration, purpose string) error {
-	args := m.Called(ctx, userID, otp, ttl, purpose)
-	return args.Error(0)
-}
-
-func (m *MockRedisRepo) GetOTP(ctx context.Context, userID string, purpose string) (string, error) {
-	args := m.Called(ctx, userID, purpose)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockRedisRepo) DeleteOTP(ctx context.Context, userID string, purpose string) error {
-	args := m.Called(ctx, userID, purpose)
-	return args.Error(0)
-}
-
-type MockPhoenixService struct {
-	mock.Mock
-}
-
-func (m *MockPhoenixService) SendMail(ctx context.Context, userID string, template phoenix.EmailTemplate) error {
-	args := m.Called(ctx, userID, template)
-	return args.Error(0)
-}
 
 func TestRequestOTP(t *testing.T) {
 	tests := []struct {
@@ -201,9 +118,9 @@ func TestRequestOTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(MockUserRepo)
-			mockRedisRepo := new(MockRedisRepo)
-			mockPhoenixService := new(MockPhoenixService)
+			mockUserRepo := new(userrepo.MockRepo)
+			mockRedisRepo := new(redisrepo.MockRedisRepo)
+			mockPhoenixService := new(phoenixservice.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
@@ -360,9 +277,9 @@ func TestVerifyOTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(MockUserRepo)
-			mockRedisRepo := new(MockRedisRepo)
-			mockPhoenixService := new(MockPhoenixService)
+			mockUserRepo := new(userrepo.MockRepo)
+			mockRedisRepo := new(redisrepo.MockRedisRepo)
+			mockPhoenixService := new(phoenixservice.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
@@ -487,9 +404,9 @@ func TestRequestOTP_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(MockUserRepo)
-			mockRedisRepo := new(MockRedisRepo)
-			mockPhoenixService := new(MockPhoenixService)
+			mockUserRepo := new(userrepo.MockRepo)
+			mockRedisRepo := new(redisrepo.MockRedisRepo)
+			mockPhoenixService := new(phoenixservice.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
@@ -623,9 +540,9 @@ func TestVerifyOTP_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(MockUserRepo)
-			mockRedisRepo := new(MockRedisRepo)
-			mockPhoenixService := new(MockPhoenixService)
+			mockUserRepo := new(userrepo.MockRepo)
+			mockRedisRepo := new(redisrepo.MockRedisRepo)
+			mockPhoenixService := new(phoenixservice.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()

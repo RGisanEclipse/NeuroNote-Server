@@ -1,6 +1,6 @@
 package server
 
-type ServerErrorMessages struct {
+type ErrorMessages struct {
 	MissingEnvVars         string
 	StartupFailed          string
 	ShutdownFailed         string
@@ -17,7 +17,7 @@ type ServerErrorMessages struct {
 	Non200ResponseError    string
 }
 
-var ServerError = ServerErrorMessages{
+var Error = ErrorMessages{
 	MissingEnvVars:         "no .env file found. Server cannot start",
 	StartupFailed:          "server startup failed",
 	ShutdownFailed:         "server shutdown error",

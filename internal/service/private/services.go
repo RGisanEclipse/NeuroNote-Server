@@ -14,7 +14,7 @@ type Services struct {
 }
 
 func New() *Services {
-	redisClient := redis.RedisClient
+	redisClient := redis.Client
 	redisRepo := redis.NewRedisRepo(redisClient)
 
 	dbConn := db.GetDB()

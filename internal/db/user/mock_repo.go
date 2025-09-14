@@ -1,44 +1,54 @@
-// internal/db/user/mock_repo.go
 package user
 
 import (
 	"context"
+
+	"github.com/stretchr/testify/mock"
 )
 
+// MockRepo is a mock implementation of the user Repository interface
 type MockRepo struct {
-	UserExistsFn       func(ctx context.Context, email string) (bool, error)
-	CreateUserFn       func(ctx context.Context, email, hash, userId string) (uint, error)
-	GetUserCredsFn     func(ctx context.Context, email string) (uint, string, error)
-	IsUserVerifiedFn   func(ctx context.Context, userId string) (bool, error)
-	GetUserEmailByIdFn func(ctx context.Context, userId string) (string, error)
-	MarkUserVerifiedFn func(ctx context.Context, userId string) error
-	ResetPasswordFn    func(ctx context.Context, userId, password string) error
+	mock.Mock
 }
 
+// UserExists mocks checking if a user exists by email
 func (m *MockRepo) UserExists(ctx context.Context, email string) (bool, error) {
-	return m.UserExistsFn(ctx, email)
+	args := m.Called(ctx, email)
+	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockRepo) CreateUser(ctx context.Context, email, hash, userId string) (uint, error) {
-	return m.CreateUserFn(ctx, email, hash, userId)
+// CreateUser mocks creating a new user
+func (m *MockRepo) CreateUser(ctx context.Context, email, passwordHash, userId string) (bool, error) {
+	args := m.Called(ctx, email, passwordHash, userId)
+	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockRepo) GetUserCreds(ctx context.Context, email string) (uint, string, error) {
-	return m.GetUserCredsFn(ctx, email)
+// GetUserCreds mocks getting user credentials by email
+func (m *MockRepo) GetUserCreds(ctx context.Context, email string) (*Creds, error) {
+	args := m.Called(ctx, email)
+	return args.Get(0).(*Creds), args.Error(1)
 }
 
+// IsUserVerified mocks checking if a user is verified
 func (m *MockRepo) IsUserVerified(ctx context.Context, userId string) (bool, error) {
-	return m.IsUserVerifiedFn(ctx, userId)
+	args := m.Called(ctx, userId)
+	return args.Bool(0), args.Error(1)
 }
 
+// GetUserEmailById mocks getting user email by ID
 func (m *MockRepo) GetUserEmailById(ctx context.Context, userId string) (string, error) {
-	return m.GetUserEmailByIdFn(ctx, userId)
+	args := m.Called(ctx, userId)
+	return args.String(0), args.Error(1)
 }
 
+// MarkUserVerified mocks marking a user as verified
 func (m *MockRepo) MarkUserVerified(ctx context.Context, userId string) error {
-	return m.MarkUserVerifiedFn(ctx, userId)
+	args := m.Called(ctx, userId)
+	return args.Error(0)
 }
 
+// ResetPassword mocks resetting a user's password
 func (m *MockRepo) ResetPassword(ctx context.Context, userId, password string) error {
-	return m.ResetPassword(ctx, userId, password)
+	args := m.Called(ctx, userId, password)
+	return args.Error(0)
 }

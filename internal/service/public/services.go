@@ -15,7 +15,7 @@ type Services struct {
 
 func New() *Services {
 	dbConn := db.GetDB()
-	redisClient := redis.RedisClient
+	redisClient := redis.Client
 
 	userrepo := user.NewGormRepo(dbConn)
 	redisRepo := redis.NewRedisRepo(redisClient)

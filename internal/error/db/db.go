@@ -1,6 +1,6 @@
 package db
 
-type DBErrorMessages struct {
+type ErrorMessages struct {
 	ConnectionFailed   string
 	QueryFailed        string
 	InsertFailed       string
@@ -10,7 +10,7 @@ type DBErrorMessages struct {
 	EmailQueryFailed   string
 }
 
-var DBError = DBErrorMessages{
+var Error = ErrorMessages{
 	ConnectionFailed:   "failed to connect to database",
 	QueryFailed:        "database query failed",
 	InsertFailed:       "database insert failed",

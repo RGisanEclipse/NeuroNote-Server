@@ -33,11 +33,11 @@ func (a *Request) Validate() error {
 func ValidateEmail(email string) error {
 
 	if strings.TrimSpace(email) == "" {
-		return errors.New(authErr.AuthError.EmailRequired)
+		return errors.New(authErr.Error.EmailRequired)
 	}
 
 	if !emailRegex.MatchString(email) {
-		return errors.New(authErr.AuthError.InvalidEmail)
+		return errors.New(authErr.Error.InvalidEmail)
 	}
 
 	return nil
@@ -46,35 +46,35 @@ func ValidateEmail(email string) error {
 func ValidatePassword(password string) error {
 
 	if strings.TrimSpace(password) == "" {
-		return errors.New(authErr.AuthError.PasswordRequired)
+		return errors.New(authErr.Error.PasswordRequired)
 	}
 
 	if len(password) < 8 {
-		return errors.New(authErr.AuthError.PasswordTooShort)
+		return errors.New(authErr.Error.PasswordTooShort)
 	}
 
 	if len(password) > 32 {
-		return errors.New(authErr.AuthError.PasswordTooLong)
+		return errors.New(authErr.Error.PasswordTooLong)
 	}
 
 	if !uppercaseRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingUppercase)
+		return errors.New(authErr.Error.PasswordMissingUppercase)
 	}
 
 	if !lowercaseRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingLowercase)
+		return errors.New(authErr.Error.PasswordMissingLowercase)
 	}
 
 	if !digitRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingDigit)
+		return errors.New(authErr.Error.PasswordMissingDigit)
 	}
 
 	if !specialCharRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordMissingSpecialCharacter)
+		return errors.New(authErr.Error.PasswordMissingSpecialCharacter)
 	}
 
 	if whitespaceRegex.MatchString(password) {
-		return errors.New(authErr.AuthError.PasswordContainsWhitespace)
+		return errors.New(authErr.Error.PasswordContainsWhitespace)
 	}
 
 	return nil

@@ -20,18 +20,19 @@ import (
 )
 
 type Service struct {
-	userrepo userrepo.Repository
-	redisrepo redisrepo.Repository
+	userrepo       userrepo.Repository
+	redisrepo      redisrepo.Repository
 	phoenixservice phoenixservice.PhoenixService
 }
 
 func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice phoenixservice.PhoenixService) *Service {
 	return &Service{
-		userrepo: userrepo,
-		redisrepo: repo,
+		userrepo:       userrepo,
+		redisrepo:      repo,
 		phoenixservice: phoenixservice,
 	}
 }
+
 // Returns true if the request is successful or error otherwise
 func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string) (bool, error) {
 	requestId := request.FromContext(ctx)
@@ -39,38 +40,38 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute, purpose)
 	if err != nil {
 		logger.Error("Failed to set OTP in Redis", err, logger.Fields{
-			"userId": userId,
+			"userId":    userId,
 			"requestId": requestId,
 		})
-		return false, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.Error.InternalError)
 	}
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.DBError.EmailQueryFailed, err, logger.Fields{
-			"userId": userId,
+		logger.Error(dbErr.Error.EmailQueryFailed, err, logger.Fields{
+			"userId":    userId,
 			"requestId": requestId,
 		})
-		return false, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.Error.InternalError)
 	}
 	if email == "" {
-		logger.Error(otpErr.OTPError.EmptyEmailForUser, nil, logger.Fields{
-			"userId": userId,
+		logger.Error(otpErr.Error.EmptyEmailForUser, nil, logger.Fields{
+			"userId":    userId,
 			"requestId": requestId,
 		})
-		return false, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.Error.InternalError)
 	}
-	
+
 	template := emailtemplates.GetOTPTemplate(otp)
 	err = s.phoenixservice.SendMail(ctx, userId, template)
 	if err != nil {
-		logger.Error(phoenixErr.PhoenixErrorMessages.EmailDeliveryFailed, err, logger.Fields{
-			"userId": userId,
-			"requestId": requestId,
+		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, err, logger.Fields{
+			"userId":       userId,
+			"requestId":    requestId,
 			"errorMessage": err.Error(),
 		})
-		return false, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.Error.InternalError)
 	}
-	
+
 	return true, nil
 }
 
@@ -78,29 +79,29 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 	requestId := request.FromContext(ctx)
 	storedOTP, err := s.redisrepo.GetOTP(ctx, userID, purpose)
 	if err != nil {
-		logger.Error(dbErr.RedisError.GetOTPFailed, err, logger.Fields{
-			"userId": userID,
-			"requestId": requestId,
-			"errorMessage": dbErr.RedisError.GetOTPFailed,
+		logger.Error(dbErr.Redis.GetOTPFailed, err, logger.Fields{
+			"userId":       userID,
+			"requestId":    requestId,
+			"errorMessage": dbErr.Redis.GetOTPFailed,
 		})
-		return false, errors.New(serverErr.ServerError.InternalError)
+		return false, errors.New(serverErr.Error.InternalError)
 	}
 
 	if storedOTP == "" {
-		logger.Error(otpErr.OTPError.OTPExpiredOrNotFound, nil, logger.Fields{
-			"userId": userID,
+		logger.Error(otpErr.Error.OTPExpiredOrNotFound, nil, logger.Fields{
+			"userId":    userID,
 			"requestId": requestId,
 		})
-		return false, errors.New(otpErr.OTPError.OTPExpiredOrNotFound)
+		return false, errors.New(otpErr.Error.OTPExpiredOrNotFound)
 	}
 
 	if code != storedOTP {
-		logger.Error(otpErr.OTPError.InvalidOTP, nil, logger.Fields{
-			"userId": userID,
-			"requestId": requestId,
+		logger.Error(otpErr.Error.InvalidOTP, nil, logger.Fields{
+			"userId":      userID,
+			"requestId":   requestId,
 			"providedOTP": code,
 		})
-		return false, errors.New(otpErr.OTPError.InvalidOTP)
+		return false, errors.New(otpErr.Error.InvalidOTP)
 	}
 
 	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)

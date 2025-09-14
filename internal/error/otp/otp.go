@@ -1,15 +1,15 @@
 package otp
 
-type OTPErrorMessages struct {
-	InvalidOTPRequest	 string
+type ErrorMessages struct {
+	InvalidOTPRequest    string
 	EmptyEmailForUser    string
 	OTPExpiredOrNotFound string
 	InvalidOTP           string
 	InvalidPurpose       string
-	OTPCodeMissing		 string
+	OTPCodeMissing       string
 }
 
-var OTPError = OTPErrorMessages{
+var Error = ErrorMessages{
 	InvalidOTPRequest:    "Invalid otp request",
 	EmptyEmailForUser:    "email empty for user",
 	OTPExpiredOrNotFound: "otp expired or not found",

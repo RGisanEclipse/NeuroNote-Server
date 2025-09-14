@@ -1,9 +1,9 @@
 package phoenix
 
-type PhoenixError struct {
+type Error struct {
 	EmailDeliveryFailed string
 }
 
-var PhoenixErrorMessages = PhoenixError{
+var ErrorMessages = Error{
 	EmailDeliveryFailed: "failed to deliver email",
 }

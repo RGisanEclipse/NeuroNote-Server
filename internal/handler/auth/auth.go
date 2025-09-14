@@ -35,15 +35,15 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err)
+			logger.Warn(server.Error.InvalidBody, err)
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.Response{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
 		if err := req.Validate(); err != nil {
-			logger.Warn(server.ServerError.BadRequest, err, logrus.Fields{
+			logger.Warn(server.Error.BadRequest, err, logrus.Fields{
 				"email":     req.Email,
 				"requestId": reqID,
 			})
@@ -62,7 +62,7 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 			})
 
 			var statusCode int
-			if err.Error() == authErr.AuthError.EmailExists {
+			if err.Error() == authErr.Error.EmailExists {
 				statusCode = http.StatusBadRequest
 			} else {
 				statusCode = http.StatusInternalServerError
@@ -107,10 +107,10 @@ func signinHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err)
+			logger.Warn(server.Error.InvalidBody, err)
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.Response{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -123,7 +123,7 @@ func signinHandler(svc authservice.S) http.HandlerFunc {
 			})
 
 			var statusCode int
-			if err.Error() == authErr.AuthError.IncorrectPassword || err.Error() == authErr.AuthError.EmailDoesntExist {
+			if err.Error() == authErr.Error.IncorrectPassword || err.Error() == authErr.Error.EmailDoesntExist {
 				statusCode = http.StatusUnauthorized
 			} else {
 				statusCode = http.StatusInternalServerError
@@ -161,7 +161,7 @@ func refreshTokenHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.RefreshTokenRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.RefreshTokenResponse{
@@ -188,7 +188,7 @@ func refreshTokenHandler(svc authservice.S) http.HandlerFunc {
 			})
 
 			var statusCode int
-			if err.Error() == authErr.AuthError.InvalidRefreshToken || err.Error() == authErr.AuthError.RefreshTokenMismatch {
+			if err.Error() == authErr.Error.InvalidRefreshToken || err.Error() == authErr.Error.RefreshTokenMismatch {
 				statusCode = http.StatusUnauthorized
 			} else {
 				statusCode = http.StatusInternalServerError
@@ -224,12 +224,12 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 		var req authmodel.SignupOTPRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -240,7 +240,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -253,7 +253,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.InternalError,
+				Message: server.Error.InternalError,
 			})
 			return
 		}
@@ -269,12 +269,12 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.OTPVerifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -285,7 +285,7 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -301,15 +301,15 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			var message string
 
 			switch err.Error() {
-			case otpErr.OTPError.InvalidOTP:
+			case otpErr.Error.InvalidOTP:
 				statusCode = http.StatusBadRequest
-				message = otpErr.OTPError.InvalidOTP
-			case otpErr.OTPError.OTPExpiredOrNotFound:
+				message = otpErr.Error.InvalidOTP
+			case otpErr.Error.OTPExpiredOrNotFound:
 				statusCode = http.StatusBadRequest
-				message = otpErr.OTPError.OTPExpiredOrNotFound
+				message = otpErr.Error.OTPExpiredOrNotFound
 			default:
 				statusCode = http.StatusInternalServerError
-				message = server.ServerError.InternalError
+				message = server.Error.InternalError
 			}
 
 			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
@@ -331,12 +331,12 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 		var req authmodel.ForgotPasswordOTPRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -347,7 +347,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -360,7 +360,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.InternalError,
+				Message: server.Error.InternalError,
 			})
 			return
 		}
@@ -376,12 +376,12 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.OTPVerifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -392,7 +392,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
@@ -408,15 +408,15 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			var message string
 
 			switch err.Error() {
-			case otpErr.OTPError.InvalidOTP:
+			case otpErr.Error.InvalidOTP:
 				statusCode = http.StatusBadRequest
-				message = otpErr.OTPError.InvalidOTP
-			case otpErr.OTPError.OTPExpiredOrNotFound:
+				message = otpErr.Error.InvalidOTP
+			case otpErr.Error.OTPExpiredOrNotFound:
 				statusCode = http.StatusBadRequest
-				message = otpErr.OTPError.OTPExpiredOrNotFound
+				message = otpErr.Error.OTPExpiredOrNotFound
 			default:
 				statusCode = http.StatusInternalServerError
-				message = server.ServerError.InternalError
+				message = server.Error.InternalError
 			}
 
 			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
@@ -437,12 +437,12 @@ func passwordResetHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.ResetPasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.ServerError.InvalidBody, err, logrus.Fields{
+			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
 			response.WriteJSON(w, http.StatusBadRequest, authmodel.ResetPasswordResponse{
 				Success: false,
-				Message: server.ServerError.BadRequest,
+				Message: server.Error.BadRequest,
 			})
 			return
 		}
