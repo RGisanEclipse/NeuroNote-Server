@@ -1,15 +1,6 @@
-package templates
+package signup
 
-import (
-	"strings"
-	
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
-)
-
-var (
-	OTPTemplate = model.EmailTemplate{
-		Subject:     "Your One-Time Password (OTP) Code",
-		BodyHTML:    `
+var BodyHTML = `
 		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional //EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html
   xmlns="http://www.w3.org/1999/xhtml"
@@ -199,105 +190,6 @@ var (
                   <!--[if (mso)|(IE)]><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding: 0px;background-color: transparent;" align="center"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:600px;"><tr style="background-color: transparent;"><![endif]-->
 
                   <!--[if (mso)|(IE)]><td align="center" width="600" style="background-color: #ddffe7;width: 600px;padding: 0px;border-top: 0px solid transparent;border-left: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;" valign="top"><![endif]-->
-                  <div
-                    class="u-col u-col-100"
-                    style="
-                      max-width: 320px;
-                      min-width: 600px;
-                      display: table-cell;
-                      vertical-align: top;
-                    "
-                  >
-                    <div
-                      style="
-                        background-color: #ffffff;
-                        height: 100%;
-                        width: 100% !important;
-                      "
-                    >
-                      <!--[if (!mso)&(!IE)]><!--><div
-                        style="
-                          box-sizing: border-box;
-                          height: 100%;
-                          padding: 0px;
-                          border-top: 0px solid transparent;
-                          border-left: 0px solid transparent;
-                          border-right: 0px solid transparent;
-                          border-bottom: 0px solid transparent;
-                        "
-                      ><!--<![endif]-->
-                        <table
-                          style="font-family: arial, helvetica, sans-serif"
-                          role="presentation"
-                          cellpadding="0"
-                          cellspacing="0"
-                          width="100%"
-                          border="0"
-                        >
-                          <tbody>
-                            <tr>
-                              <td
-                                style="
-                                  overflow-wrap: break-word;
-                                  word-break: break-word;
-                                  padding: 10px;
-                                  font-family: arial, helvetica, sans-serif;
-                                "
-                                align="left"
-                              >
-                                <table
-                                  role="presentation"
-                                  width="100%"
-                                  cellpadding="0"
-                                  cellspacing="0"
-                                  border="0"
-                                >
-                                  <tr>
-                                    <td
-                                      style="
-                                        padding-right: 0px;
-                                        padding-left: 0px;
-                                      "
-                                      align="center"
-                                    >
-                                      <img
-                                        align="center"
-                                        border="0"
-                                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVbe5-pYoDQyfRFcR23svk5PIRd5Gz_nT1KwQVCrEiP2Ya8RYqpAoan5qyJBaGjZAocTc&usqp=CAU"
-                                        alt="image"
-                                        title="image"
-                                        style="
-                                          outline: none;
-                                          text-decoration: none;
-                                          -ms-interpolation-mode: bicubic;
-                                          clear: both;
-                                          display: inline-block !important;
-                                          border: none;
-                                          height: auto;
-                                          float: none;
-                                          width: 100%;
-                                          max-width: 190px;
-                                        "
-                                        width="190"
-                                      />
-                                    </td>
-                                  </tr>
-                                </table>
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-
-                        <!--[if (!mso)&(!IE)]><!-->
-                      </div>
-                      <!--<![endif]-->
-                    </div>
-                  </div>
-                  <!--[if (mso)|(IE)]></td><![endif]-->
-                  <!--[if (mso)|(IE)]></tr></table></td></tr></table><![endif]-->
-                </div>
-              </div>
-            </div>
 
             <div
               class="u-row-container"
@@ -493,18 +385,21 @@ var (
                                   "
                                 >
                                   <p style="line-height: 140%; margin: 0px">
-                                   You’ve got 5 minutes to use it, so don’t snooze! ⏱️  
+                                    You’ve got 5 minutes to use it, so don’t
+                                    snooze! ⏱️
                                   </p>
                                   <p style="line-height: 140%; margin: 0px">
-                                    Quick heads-up: this code is just for you, so keep it secret.  
-									If you didn’t request this, no worries. Just ignore this message and carry on. ✌️ 
+                                    Quick heads-up: this code is just for you,
+                                    so keep it secret. If you didn’t request
+                                    this, no worries. Just ignore this message
+                                    and carry on. ✌️
                                   </p>
-								  <br>
-								  <p style="line-height: 140%; margin: 0px">
-                                   Stay awesome,  
+                                  <br />
+                                  <p style="line-height: 140%; margin: 0px">
+                                    Stay awesome,
                                   </p>
-								  <p style="line-height: 140%; margin: 0px">
-                                   Team NeuroNote  
+                                  <p style="line-height: 140%; margin: 0px">
+                                    Team NeuroNote
                                   </p>
                                 </div>
                               </td>
@@ -532,13 +427,4 @@ var (
     <!--[if IE]></div><![endif]-->
   </body>
 </html>
-`,
-	}
-)
-func GetOTPTemplate(otp string) model.EmailTemplate {
-	
-	return model.EmailTemplate{
-		Subject:     OTPTemplate.Subject,
-		BodyHTML:    strings.Replace(OTPTemplate.BodyHTML, "{{.OTP}}", otp, 1),
-	}
-}
+`

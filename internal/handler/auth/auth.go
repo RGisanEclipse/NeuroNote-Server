@@ -227,7 +227,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -238,7 +238,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn("Empty userId in OTP request", nil, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -251,7 +251,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 				"userId":    req.UserId,
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusInternalServerError, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.InternalError,
 			})
@@ -272,7 +272,7 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -283,7 +283,7 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn("Empty userId or code in OTP verify request", nil, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -312,7 +312,7 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 				message = server.Error.InternalError
 			}
 
-			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
+			response.WriteJSON(w, statusCode, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: message,
 			})
@@ -334,7 +334,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -345,7 +345,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn("Empty email in OTP request", nil, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -358,7 +358,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 				"email":     req.Email,
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusInternalServerError, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.InternalError,
 			})
@@ -379,7 +379,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -390,7 +390,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 			logger.Warn("Empty userId or code in OTP verify request", nil, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
+			response.WriteJSON(w, http.StatusBadRequest, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: server.Error.BadRequest,
 			})
@@ -419,7 +419,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 				message = server.Error.InternalError
 			}
 
-			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
+			response.WriteJSON(w, statusCode, authmodel.GenericOTPResponse{
 				Success: false,
 				Message: message,
 			})

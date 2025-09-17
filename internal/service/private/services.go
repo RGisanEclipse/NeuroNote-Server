@@ -9,7 +9,7 @@ import (
 )
 
 type Services struct {
-	OTP     otp.OTPService
+	OTP     otp.S
 	Phoenix phoenixservice.PhoenixService
 }
 

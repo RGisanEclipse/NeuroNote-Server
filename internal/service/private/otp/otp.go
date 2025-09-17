@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
 	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
 	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
 	phoenixErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/phoenix"
 	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-	emailtemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	otpTemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates/otp"
 	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
 	otpUtils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/otp"
 )
@@ -33,35 +32,44 @@ func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice
 	}
 }
 
-// Returns true if the request is successful or error otherwise
+// RequestOTP Returns true if the request is successful or error otherwise
 func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string) (bool, error) {
 	requestId := request.FromContext(ctx)
+	logFields := logger.Fields{
+		"userId":    userId,
+		"requestId": requestId,
+		"purpose":   purpose,
+	}
+
+	// Validate purpose first
+	if !otpTemplates.IsValidPurpose(purpose) {
+		logger.Warn("Invalid purpose provided", nil, logFields)
+		return false, errors.New(serverErr.Error.InternalError)
+	}
+
 	otp := otpUtils.GenerateOTP()
 	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute, purpose)
 	if err != nil {
-		logger.Error("Failed to set OTP in Redis", err, logger.Fields{
-			"userId":    userId,
-			"requestId": requestId,
-		})
+		logger.Error("Failed to set OTP in Redis", err, logFields)
 		return false, errors.New(serverErr.Error.InternalError)
 	}
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.EmailQueryFailed, err, logger.Fields{
-			"userId":    userId,
-			"requestId": requestId,
-		})
+		logger.Error(dbErr.Error.EmailQueryFailed, err, logFields)
 		return false, errors.New(serverErr.Error.InternalError)
 	}
 	if email == "" {
-		logger.Error(otpErr.Error.EmptyEmailForUser, nil, logger.Fields{
-			"userId":    userId,
-			"requestId": requestId,
-		})
+		logger.Error(otpErr.Error.EmptyEmailForUser, nil, logFields)
 		return false, errors.New(serverErr.Error.InternalError)
 	}
 
-	template := emailtemplates.GetOTPTemplate(otp)
+	template, err := otpTemplates.GetTemplate(otp, purpose)
+
+	if err != nil {
+		logger.Warn("Error getting template for purpose", err, logFields)
+		return false, errors.New(serverErr.Error.InternalError)
+	}
+
 	err = s.phoenixservice.SendMail(ctx, userId, template)
 	if err != nil {
 		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, err, logger.Fields{
@@ -77,6 +85,18 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 
 func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, purpose string) (bool, error) {
 	requestId := request.FromContext(ctx)
+	logFields := logger.Fields{
+		"userId":    userID,
+		"requestId": requestId,
+		"purpose":   purpose,
+	}
+
+	// Validate purpose first
+	if !otpTemplates.IsValidPurpose(purpose) {
+		logger.Warn("Invalid purpose provided", nil, logFields)
+		return false, errors.New(serverErr.Error.InternalError)
+	}
+
 	storedOTP, err := s.redisrepo.GetOTP(ctx, userID, purpose)
 	if err != nil {
 		logger.Error(dbErr.Redis.GetOTPFailed, err, logger.Fields{
@@ -104,7 +124,13 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 		return false, errors.New(otpErr.Error.InvalidOTP)
 	}
 
-	_ = s.redisrepo.DeleteOTP(ctx, userID, purpose)
+	if err := s.redisrepo.DeleteOTP(ctx, userID, purpose); err != nil {
+		logger.Warn("Failed to delete OTP after verification", err, logger.Fields{
+			"userId":    userID,
+			"requestId": requestId,
+			"purpose":   purpose,
+		})
+	}
 
 	return true, nil
 }

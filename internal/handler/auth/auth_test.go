@@ -37,19 +37,19 @@ func (m *mockAuthService) RefreshToken(ctx context.Context, refreshToken string)
 	return args.Get(0).(authmodel.RefreshTokenServiceResponse), args.Error(1)
 }
 
-func (m *mockAuthService) SignupOTP(ctx context.Context, userId string) (authmodel.OTPResponse, error) {
+func (m *mockAuthService) SignupOTP(ctx context.Context, userId string) (authmodel.GenericOTPResponse, error) {
 	args := m.Called(ctx, userId)
-	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
+	return args.Get(0).(authmodel.GenericOTPResponse), args.Error(1)
 }
 
-func (m *mockAuthService) SignupOTPVerify(ctx context.Context, userId, code string) (authmodel.OTPResponse, error) {
+func (m *mockAuthService) SignupOTPVerify(ctx context.Context, userId, code string) (authmodel.GenericOTPResponse, error) {
 	args := m.Called(ctx, userId, code)
-	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
+	return args.Get(0).(authmodel.GenericOTPResponse), args.Error(1)
 }
 
-func (m *mockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.OTPResponse, error) {
+func (m *mockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.GenericOTPResponse, error) {
 	args := m.Called(ctx, email)
-	return args.Get(0).(authmodel.OTPResponse), args.Error(1)
+	return args.Get(0).(authmodel.GenericOTPResponse), args.Error(1)
 }
 
 func (m *mockAuthService) ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authmodel.ForgotPasswordResponse, error) {
@@ -340,10 +340,10 @@ func TestSignupOTPHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.SignupOTPRequest
-		mockReturn     *authmodel.OTPResponse
+		mockReturn     *authmodel.GenericOTPResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.OTPResponse
+		expectedBody   *authmodel.GenericOTPResponse
 		expectCall     bool
 	}{
 		{
@@ -351,13 +351,13 @@ func TestSignupOTPHandler(t *testing.T) {
 			request: authmodel.SignupOTPRequest{
 				UserId: "user123",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
@@ -369,7 +369,7 @@ func TestSignupOTPHandler(t *testing.T) {
 				UserId: "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -380,13 +380,13 @@ func TestSignupOTPHandler(t *testing.T) {
 			request: authmodel.SignupOTPRequest{
 				UserId: "user123",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
 			mockError:      errors.New(serverErr.Error.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
@@ -396,7 +396,7 @@ func TestSignupOTPHandler(t *testing.T) {
 			name:           "InvalidRequestBody",
 			request:        authmodel.SignupOTPRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -423,7 +423,7 @@ func TestSignupOTPHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.OTPResponse
+			var resp authmodel.GenericOTPResponse
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -442,10 +442,10 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.OTPVerifyRequest
-		mockReturn     *authmodel.OTPResponse
+		mockReturn     *authmodel.GenericOTPResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.OTPResponse
+		expectedBody   *authmodel.GenericOTPResponse
 		expectCall     bool
 	}{
 		{
@@ -454,13 +454,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -472,13 +472,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "wrong123",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: otpErr.Error.InvalidOTP,
 			},
 			mockError:      errors.New(otpErr.Error.InvalidOTP),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: otpErr.Error.InvalidOTP,
 			},
@@ -490,13 +490,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: otpErr.Error.OTPExpiredOrNotFound,
 			},
 			mockError:      errors.New(otpErr.Error.OTPExpiredOrNotFound),
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: otpErr.Error.OTPExpiredOrNotFound,
 			},
@@ -508,13 +508,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil, // OTP service returns success=false but no error
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -526,13 +526,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "Failed to mark user as verified",
 			},
 			mockError:      nil, // OTP verification succeeds but user verification fails
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "Failed to mark user as verified",
 			},
@@ -545,7 +545,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				Code:   "123456",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -558,7 +558,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				Code:   "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -571,7 +571,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				Code:   "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -581,7 +581,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			name:           "InvalidRequestBody",
 			request:        authmodel.OTPVerifyRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -593,13 +593,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
 			mockError:      errors.New(serverErr.Error.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
@@ -611,13 +611,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "very-long-user-id-that-exceeds-normal-limits-and-might-cause-issues-in-some-systems",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -629,13 +629,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "1234567890123456789012345678901234567890",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -647,13 +647,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user-123_test@domain",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -665,13 +665,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   "123@456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -683,13 +683,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: " user123 ",
 				Code:   "123456",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP verified successfully",
 			},
@@ -701,13 +701,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 				UserId: "user123",
 				Code:   " 123456 ",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: "OTP verification failed",
 			},
@@ -734,7 +734,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.OTPResponse
+			var resp authmodel.GenericOTPResponse
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
@@ -865,10 +865,10 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 	tests := []struct {
 		name           string
 		request        authmodel.ForgotPasswordOTPRequest
-		mockReturn     *authmodel.OTPResponse
+		mockReturn     *authmodel.GenericOTPResponse
 		mockError      error
 		expectedStatus int
-		expectedBody   *authmodel.OTPResponse
+		expectedBody   *authmodel.GenericOTPResponse
 		expectCall     bool
 	}{
 		{
@@ -876,12 +876,12 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			request: authmodel.ForgotPasswordOTPRequest{
 				Email: "test@example.com",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
 			},
@@ -892,13 +892,13 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			request: authmodel.ForgotPasswordOTPRequest{
 				Email: "nonexistent@example.com",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: authErr.Error.EmailDoesntExist,
 			},
 			mockError:      errors.New(authErr.Error.EmailDoesntExist),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
@@ -910,7 +910,7 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 				Email: "",
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -920,7 +920,7 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			name:           "InvalidRequestBody",
 			request:        authmodel.ForgotPasswordOTPRequest{},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.BadRequest,
 			},
@@ -931,12 +931,12 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			request: authmodel.ForgotPasswordOTPRequest{
 				Email: "test@example.com",
 			},
-			mockReturn: &authmodel.OTPResponse{
+			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: authErr.Error.OTPSendFailure,
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: authErr.Error.OTPSendFailure,
 			},
@@ -947,10 +947,10 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			request: authmodel.ForgotPasswordOTPRequest{
 				Email: "test@example.com",
 			},
-			mockReturn:     &authmodel.OTPResponse{},
+			mockReturn:     &authmodel.GenericOTPResponse{},
 			mockError:      errors.New(serverErr.Error.InternalError),
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody: &authmodel.OTPResponse{
+			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
 				Message: serverErr.Error.InternalError,
 			},
@@ -977,7 +977,7 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.OTPResponse
+			var resp authmodel.GenericOTPResponse
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 			assert.Equal(t, tt.expectedBody.Success, resp.Success)
 			assert.Equal(t, tt.expectedBody.Message, resp.Message)
