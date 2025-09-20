@@ -1,15 +1,17 @@
 package auth
 
 import (
-	"errors"
 	"os"
 	"time"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
+	"github.com/sirupsen/logrus"
 )
+
 type Claims struct {
-	UserID string   `json:"user_id"`
+	UserID string `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }
@@ -17,7 +19,10 @@ type Claims struct {
 func GenerateTokenPair(userId string, email string) (accessToken string, refreshToken string, err error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		return "", "", errors.New(auth.JWTError.JWTSecretNotSet)
+		logger.Error(appError.ServerMissingEnvVars.Message, nil, appError.ServerMissingEnvVars, logrus.Fields{
+			"message": "JWT Secret is not set in the environment",
+		})
+		return "", "", appError.ServerMissingEnvVars
 	}
 
 	accessClaims := Claims{
@@ -31,7 +36,7 @@ func GenerateTokenPair(userId string, email string) (accessToken string, refresh
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessToken, err = at.SignedString([]byte(secret))
 	if err != nil {
-		return "", "", errors.New(auth.JWTError.TokenGenerationFailed)
+		return "", "", appError.AuthTokenGenerationFailed
 	}
 
 	refreshClaims := Claims{
@@ -50,12 +55,15 @@ func GenerateTokenPair(userId string, email string) (accessToken string, refresh
 func VerifyAuthToken(tokenString string) (*Claims, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		return nil, errors.New(auth.JWTError.JWTSecretNotSet)
+		logger.Error(appError.ServerMissingEnvVars.Message, nil, appError.ServerMissingEnvVars, logrus.Fields{
+			"message": "JWT Secret is not set in the environment",
+		})
+		return nil, appError.ServerMissingEnvVars
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New(auth.JWTError.InvalidTokenSigningMethod)
+			return nil, appError.AuthInvalidTokenSigningMethod
 		}
 		return []byte(secret), nil
 	})
@@ -65,7 +73,7 @@ func VerifyAuthToken(tokenString string) (*Claims, error) {
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return nil, errors.New(auth.JWTError.TokenInvalid)
+		return nil, appError.AuthTokenInvalid
 	}
 
 	return claims, nil

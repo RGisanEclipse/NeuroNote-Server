@@ -5,12 +5,10 @@ import (
 	"errors"
 	"time"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
-	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
-	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	otpService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
@@ -38,66 +36,68 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 	exists, err := s.userrepo.UserExists(ctx, email)
 	reqID := request.FromContext(ctx)
 	if err != nil {
-		logger.Error(dbErr.Error.QueryFailed, err)
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{
+			"requestId": reqID,
+		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 	if exists {
-		logger.Info(authErr.Error.EmailExists, logger.Fields{
+		logger.Warn(appError.AuthEmailExists.Message, err, appError.AuthEmailExists, logger.Fields{
 			"email":     email,
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: authErr.Error.EmailExists,
-		}, errors.New(authErr.Error.EmailExists)
+			Message: appError.AuthEmailExists.Message,
+		}, appError.AuthEmailExists
 	}
 
 	hash, err := authutils.HashPassword(password)
 	if err != nil {
-		logger.Error(authErr.Error.PasswordHashingFailed, err, logger.Fields{
+		logger.Error(appError.AuthPasswordHashingFailed.Message, err, appError.AuthPasswordHashingFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 	// Generate a unique user ID (e.g., UUID or similar)
 	userId := authutils.GenerateUserId()
 	success, err := s.userrepo.CreateUser(ctx, email, hash, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.QueryFailed, err, logger.Fields{
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: success,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	accessToken, refreshToken, err := authutils.GenerateTokenPair(userId, email)
 
 	if err != nil {
-		logger.Error(authErr.Error.TokenGenerationFailed, err, logger.Fields{
+		logger.Error(appError.AuthTokenGenerationFailed.Message, err, appError.AuthTokenGenerationFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	if err := s.redisrepo.SetRefreshToken(ctx, userId, refreshToken, RefreshTokenExpiry); err != nil {
-		logger.Error(dbErr.Redis.SetRefreshTokenFailed, err, logger.Fields{
+		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	logger.Info("Account created successfully", logger.Fields{
@@ -121,61 +121,61 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 	reqID := request.FromContext(ctx)
 
 	if err != nil || creds == nil {
-		logger.Error(authErr.Error.EmailDoesntExist, err, logger.Fields{
+		logger.Error(appError.AuthEmailDoesntExist.Message, err, appError.AuthEmailDoesntExist, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success:    false,
-			Message:    authErr.Error.EmailDoesntExist,
+			Message:    appError.AuthEmailDoesntExist.Message,
 			IsVerified: false,
-		}, errors.New(authErr.Error.EmailDoesntExist)
+		}, appError.AuthEmailDoesntExist
 	}
 
 	userId := creds.Id
 
 	isVerified, err := s.userrepo.IsUserVerified(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.QueryFailed, err, logger.Fields{
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success:    false,
-			Message:    serverErr.Error.InternalError,
+			Message:    appError.ServerInternalError.Message,
 			IsVerified: false,
-		}, errors.New(serverErr.Error.InternalError)
+		}, appError.ServerInternalError
 	}
 
 	if !authutils.CheckPasswordHash(password, creds.PasswordHash) {
-		logger.Warn(authErr.Error.IncorrectPassword, nil, logger.Fields{
+		logger.Warn(appError.AuthIncorrectPassword.Message, nil, appError.AuthIncorrectPassword, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success:    false,
-			Message:    authErr.Error.IncorrectPassword,
+			Message:    appError.AuthIncorrectPassword.Message,
 			IsVerified: false,
-		}, errors.New(authErr.Error.IncorrectPassword)
+		}, appError.AuthIncorrectPassword
 	}
 
 	accessToken, refreshToken, err := authutils.GenerateTokenPair(userId, email)
 	if err != nil {
-		logger.Error(authErr.Error.TokenGenerationFailed, err, logger.Fields{
+		logger.Error(appError.AuthTokenGenerationFailed.Message, err, appError.AuthTokenGenerationFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success:    false,
-			Message:    serverErr.Error.InternalError,
+			Message:    appError.ServerInternalError.Message,
 			IsVerified: false,
-		}, errors.New(serverErr.Error.InternalError)
+		}, appError.ServerInternalError
 	}
 
 	if err := s.redisrepo.SetRefreshToken(ctx, userId, refreshToken, RefreshTokenExpiry); err != nil {
-		logger.Error(dbErr.Redis.SetRefreshTokenFailed, err, logger.Fields{
+		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})
 		return authModels.ServiceResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	logger.Info("User logged in successfully", logger.Fields{
@@ -197,34 +197,34 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 
 	claims, err := authutils.VerifyAuthToken(refreshToken)
 	if err != nil {
-		logger.Warn(authErr.Error.InvalidRefreshToken, err, logger.Fields{
+		logger.Warn(appError.AuthInvalidRefreshToken.Message, err, appError.AuthInvalidRefreshToken, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.Error.InvalidRefreshToken)
+		return authModels.RefreshTokenServiceResponse{}, appError.AuthInvalidRefreshToken
 	}
 
 	userId := claims.UserID
 	email := claims.Email
 	if userId == "" || email == "" {
-		logger.Error("Refresh token missing required claims", nil, logger.Fields{
+		logger.Error("Refresh token missing required claims", nil, appError.AuthInvalidRefreshToken, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.Error.InvalidRefreshToken)
+		return authModels.RefreshTokenServiceResponse{}, appError.AuthInvalidRefreshToken
 	}
 
 	storedToken, err := s.redisrepo.GetRefreshToken(ctx, userId)
 	if err != nil || storedToken != refreshToken {
-		logger.Warn(authErr.Error.RefreshTokenMismatch, err, logger.Fields{
+		logger.Warn(appError.AuthRefreshTokenMismatch.Message, err, appError.AuthRefreshTokenMismatch, logger.Fields{
 			"requestId":     reqID,
 			"storedToken":   storedToken,
 			"providedToken": refreshToken,
 		})
-		return authModels.RefreshTokenServiceResponse{}, errors.New(authErr.Error.RefreshTokenMismatch)
+		return authModels.RefreshTokenServiceResponse{}, appError.AuthRefreshTokenMismatch
 	}
 
 	// Immediately delete the used refresh token to prevent reuse
 	if err := s.redisrepo.DeleteRefreshToken(ctx, userId); err != nil {
-		logger.Error("Failed to delete used refresh token", err, logger.Fields{
+		logger.Error("Failed to delete used refresh token", err, appError.RedisDeleteRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 			"userId":    userId,
 		})
@@ -232,17 +232,17 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 
 	newAccessToken, newRefreshToken, err := authutils.GenerateTokenPair(userId, email)
 	if err != nil {
-		logger.Error(authErr.Error.TokenGenerationFailed, err, logger.Fields{
+		logger.Error(appError.AuthTokenGenerationFailed.Message, err, appError.AuthTokenGenerationFailed, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenServiceResponse{}, errors.New(serverErr.Error.InternalError)
+		return authModels.RefreshTokenServiceResponse{}, appError.ServerInternalError
 	}
 
 	if err := s.redisrepo.SetRefreshToken(ctx, userId, newRefreshToken, RefreshTokenExpiry); err != nil {
-		logger.Error(dbErr.Redis.SetRefreshTokenFailed, err, logger.Fields{
+		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})
-		return authModels.RefreshTokenServiceResponse{}, errors.New(serverErr.Error.InternalError)
+		return authModels.RefreshTokenServiceResponse{}, appError.ServerInternalError
 	}
 
 	logger.Info("Refresh token generated successfully", logger.Fields{
@@ -268,18 +268,18 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 
 	success, err := s.otpService.RequestOTP(ctx, userId, "signup")
 	if err != nil {
-		logger.Error("Failed to send OTP due to service error", err, logFields)
+		logger.Error("Failed to send OTP due to service error", err, appError.AuthInternalServiceError, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.InternalServiceError,
+			Message: appError.AuthInternalServiceError.Message,
 		}, err
 	}
 
 	if !success {
-		logger.Warn("OTP service returned unsuccessful result", nil, logFields)
+		logger.Warn("OTP service returned unsuccessful result", nil, appError.AuthOtpSendFailure, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.OTPSendFailure,
+			Message: appError.AuthOtpSendFailure.Message,
 		}, nil
 	}
 
@@ -302,24 +302,24 @@ func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (auth
 
 	success, err := s.otpService.VerifyOTP(ctx, userId, otp, "signup")
 	if err != nil {
-		logger.Error("Failed to verify OTP due to service error", err, logFields)
+		logger.Error("Failed to verify OTP due to service error", err, appError.AuthInternalServiceError, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.InternalServiceError,
+			Message: appError.AuthInternalServiceError.Message,
 		}, err
 	}
 
 	if !success {
-		logger.Warn("OTP verification failed", nil, logFields)
+		logger.Warn("OTP verification failed", nil, appError.AuthOtpVerificationFailure, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.OTPVerificationFailure,
+			Message: appError.AuthOtpVerificationFailure.Message,
 		}, nil
 	}
 	err = s.userrepo.MarkUserVerified(ctx, userId)
 
 	if err != nil {
-		logger.Warn(dbErr.Error.UpdateFailed, err, logFields)
+		logger.Warn(appError.DBUpdateFailed.Message, err, appError.DBUpdateFailed, logFields)
 
 		return authModels.GenericOTPResponse{
 			Success: false,
@@ -341,19 +341,19 @@ func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authMode
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			logger.Warn("Password reset requested for non-existing email", nil, logger.Fields{
+			logger.Warn("Password reset requested for non-existing email", nil, appError.AuthEmailDoesntExist, logger.Fields{
 				"requestId": reqID,
 				"email":     email,
 			})
 			return authModels.GenericOTPResponse{
 				Success: false,
-				Message: authErr.Error.EmailDoesntExist,
-			}, errors.New(authErr.Error.EmailDoesntExist)
+				Message: appError.AuthEmailDoesntExist.Message,
+			}, appError.AuthEmailDoesntExist
 		}
 		return authModels.GenericOTPResponse{
 			Success: true,
 			Message: "OTP sent if password exists",
-		}, errors.New(serverErr.Error.InternalError)
+		}, appError.ServerInternalError
 	}
 
 	userId := creds.Id
@@ -365,18 +365,18 @@ func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authMode
 
 	success, err := s.otpService.RequestOTP(ctx, userId, "forgot_password")
 	if err != nil {
-		logger.Error("Failed to send OTP due to service error", err, logFields)
+		logger.Error("Failed to send OTP due to service error", err, appError.AuthInternalServiceError, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.InternalServiceError,
+			Message: appError.AuthInternalServiceError.Message,
 		}, err
 	}
 
 	if !success {
-		logger.Warn("OTP service returned unsuccessful result", nil, logFields)
+		logger.Warn("OTP service returned unsuccessful result", nil, appError.AuthOtpSendFailure, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: authErr.Error.OTPSendFailure,
+			Message: appError.AuthOtpSendFailure.Message,
 		}, nil
 	}
 
@@ -399,28 +399,28 @@ func (s *Service) ForgotPasswordOTPVerify(ctx context.Context, userId string, ot
 
 	success, err := s.otpService.VerifyOTP(ctx, userId, otp, "forgot_password")
 	if err != nil {
-		logger.Error("Failed to verify OTP due to service error", err, logFields)
+		logger.Error("Failed to verify OTP due to service error", err, appError.AuthInternalServiceError, logFields)
 		return authModels.ForgotPasswordResponse{
 			Success: false,
-			Message: authErr.Error.InternalServiceError,
+			Message: appError.AuthInternalServiceError.Message,
 		}, err
 	}
 
 	if !success {
-		logger.Warn("OTP verification failed", nil, logFields)
+		logger.Warn("OTP verification failed", nil, appError.AuthOtpVerificationFailure, logFields)
 		return authModels.ForgotPasswordResponse{
 			Success: false,
-			Message: authErr.Error.OTPVerificationFailure,
+			Message: appError.AuthOtpVerificationFailure.Message,
 		}, nil
 	}
 
 	err = s.redisrepo.SetPasswordResetFlag(ctx, userId, ResetPasswordExpiry)
 	if err != nil {
-		logger.Warn(dbErr.Redis.SetPasswordResetKeyFailed, err, logFields)
+		logger.Warn(appError.RedisSetPasswordResetKeyFailed.Message, err, appError.RedisSetPasswordResetKeyFailed, logFields)
 		return authModels.ForgotPasswordResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	logger.Info("Forgot Password OTP verified successfully", logFields)
@@ -442,41 +442,41 @@ func (s *Service) ResetPassword(ctx context.Context, userId string, password str
 	}
 	exists, err := s.userrepo.UserExists(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.QueryFailed, err)
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 	if !exists {
-		logger.Warn(authErr.Error.UserNotFound, nil, logFields)
+		logger.Warn(appError.AuthUserNotFound.Message, nil, appError.AuthUserNotFound, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: authErr.Error.UserNotFound,
-		}, errors.New(authErr.Error.UserNotFound)
+			Message: appError.AuthUserNotFound.Message,
+		}, appError.AuthUserNotFound
 	}
 
 	isVerified, err := s.redisrepo.CheckPasswordResetFlag(ctx, userId)
 
 	if err != nil {
-		logger.Warn(dbErr.Redis.SetPasswordResetKeyFailed, err, logFields)
+		logger.Warn(appError.RedisSetPasswordResetKeyFailed.Message, err, appError.RedisSetPasswordResetKeyFailed, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	if !isVerified {
-		logger.Warn(authErr.Error.PasswordOTPNotVerified, nil, logFields)
+		logger.Warn(appError.AuthPasswordOtpNotVerified.Message, nil, appError.AuthPasswordOtpNotVerified, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: authErr.Error.PasswordOTPNotVerified,
-		}, errors.New(authErr.Error.PasswordOTPNotVerified)
+			Message: appError.AuthPasswordOtpNotVerified.Message,
+		}, appError.AuthPasswordOtpNotVerified
 	}
 
 	err = authModels.ValidatePassword(password)
 	if err != nil {
-		logger.Warn("Password reset attempt with weak password", nil, logFields)
+		logger.Warn("Password reset attempt with weak password", nil, appError.PasswordTooShort, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
 			Message: "Password doesn't match the required criteria",
@@ -485,17 +485,17 @@ func (s *Service) ResetPassword(ctx context.Context, userId string, password str
 
 	hash, err := authutils.HashPassword(password)
 	if err != nil {
-		logger.Error(authErr.Error.PasswordHashingFailed, err, logFields)
+		logger.Error(appError.AuthPasswordHashingFailed.Message, err, appError.AuthPasswordHashingFailed, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	err = s.userrepo.ResetPassword(ctx, userId, hash)
 
 	if err != nil {
-		logger.Warn(dbErr.Error.UpdateFailed, err, logFields)
+		logger.Warn(appError.DBUpdateFailed.Message, err, appError.DBUpdateFailed, logFields)
 
 		return authModels.ResetPasswordResponse{
 			Success: false,
@@ -506,11 +506,11 @@ func (s *Service) ResetPassword(ctx context.Context, userId string, password str
 	err = s.redisrepo.DeletePasswordResetFlag(ctx, userId)
 
 	if err != nil {
-		logger.Warn(dbErr.Redis.SetPasswordResetKeyFailed, err, logFields)
+		logger.Warn(appError.RedisSetPasswordResetKeyFailed.Message, err, appError.RedisSetPasswordResetKeyFailed, logFields)
 		return authModels.ResetPasswordResponse{
 			Success: false,
-			Message: serverErr.Error.InternalError,
-		}, errors.New(serverErr.Error.InternalError)
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
 	return authModels.ResetPasswordResponse{

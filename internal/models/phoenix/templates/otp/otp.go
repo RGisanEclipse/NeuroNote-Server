@@ -1,10 +1,8 @@
 package otp
 
 import (
-	"errors"
 	"strings"
-
-	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
 	forgotPassword "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates/otp/forgot_password"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates/otp/signup"
@@ -20,7 +18,7 @@ func GetTemplate(otp string, purpose string) (model.EmailTemplate, error) {
 	body, exists := bodyMap[purpose]
 
 	if !exists {
-		return model.EmailTemplate{}, errors.New(otpErr.Error.InvalidPurpose)
+		return model.EmailTemplate{}, appError.OtpInvalidPurpose
 	}
 
 	return model.EmailTemplate{

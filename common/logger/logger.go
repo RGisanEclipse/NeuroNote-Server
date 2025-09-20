@@ -7,10 +7,10 @@ import (
 	"runtime"
 	"strings"
 
+	apperror "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/sirupsen/logrus"
 )
 
-// public alias so callers can write logger.Fields{…}
 type Fields = logrus.Fields
 
 var log = logrus.New()
@@ -83,34 +83,38 @@ func Debug(msg string, fields ...Fields) {
 	}
 }
 
-func Warn(msg string, err error, fields ...Fields) {
-	if err == nil {
-		err = errors.New(msg)
-	}
-
-	entry := log.WithFields(Fields{
-		"error":  err.Error(),
-		"caller": captureCaller(),
-	})
-	if len(fields) > 0 {
-		entry = entry.WithFields(fields[0])
-	}
-	entry.Warn(msg)
-}
-
-func Error(msg string, err error, fields ...Fields) {
+func Error(msg string, err error, errorCode apperror.Code, fields ...Fields) {
 	var errStr string
 	if err != nil {
 		errStr = err.Error()
 	}
 
 	entry := log.WithFields(Fields{
-		"error":  errStr,
-		"caller": captureCaller(),
-		"stack":  captureStack(),
+		"error":      errStr,
+		"error_code": errorCode.Code,
+		"status":     errorCode.Status,
+		"caller":     captureCaller(),
+		"stack":      captureStack(),
 	})
 	if len(fields) > 0 {
 		entry = entry.WithFields(fields[0])
 	}
 	entry.Error(msg)
+}
+
+func Warn(msg string, err error, errorCode apperror.Code, fields ...Fields) {
+	if err == nil {
+		err = errors.New(msg)
+	}
+
+	entry := log.WithFields(Fields{
+		"error":      err.Error(),
+		"error_code": errorCode.Code,
+		"status":     errorCode.Status,
+		"caller":     captureCaller(),
+	})
+	if len(fields) > 0 {
+		entry = entry.WithFields(fields[0])
+	}
+	entry.Warn(msg)
 }

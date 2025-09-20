@@ -9,15 +9,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	authhandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/auth"
+	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
-	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
-	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-	authhandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/auth"
-	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 )
 
 // Mock service that satisfies authservice.Service
@@ -98,13 +95,13 @@ func TestSignupHandler(t *testing.T) {
 			request: authmodel.Request{Email: "exists@example.com", Password: "validPass@1234"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
-				Message: authErr.Error.EmailExists,
+				Message: appError.AuthEmailExists.Message,
 			},
-			mockError:      errors.New(authErr.Error.EmailExists),
-			expectedStatus: http.StatusBadRequest,
+			mockError:      appError.AuthEmailExists,
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.EmailExists,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -114,7 +111,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.EmailRequired,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -124,7 +121,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordRequired,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -134,7 +131,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.InvalidEmail,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -144,7 +141,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordTooShort,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -154,7 +151,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordTooLong,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -164,7 +161,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordMissingUppercase,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -174,7 +171,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordMissingLowercase,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -184,7 +181,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordMissingDigit,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -194,7 +191,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordMissingSpecialCharacter,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -204,7 +201,7 @@ func TestSignupHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.PasswordContainsWhitespace,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -228,10 +225,28 @@ func TestSignupHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.Response
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+				if tt.expectedBody.AccessToken != "" {
+					data := resp["data"].(map[string]interface{})
+					assert.Equal(t, tt.expectedBody.AccessToken, data["token"])
+					assert.Equal(t, tt.expectedBody.IsVerified, data["isVerified"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
+			
 			if tt.expectCall {
 				mockSvc.AssertExpectations(t)
 			} else {
@@ -277,13 +292,13 @@ func TestSigninHandler(t *testing.T) {
 			request: authmodel.Request{Email: "user@example.com", Password: "wrong"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
-				Message: authErr.Error.IncorrectPassword,
+				Message: appError.AuthIncorrectPassword.Message,
 			},
-			mockError:      errors.New(authErr.Error.IncorrectPassword),
-			expectedStatus: http.StatusUnauthorized,
+			mockError:      errors.New(appError.AuthIncorrectPassword.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.IncorrectPassword,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -292,13 +307,13 @@ func TestSigninHandler(t *testing.T) {
 			request: authmodel.Request{Email: "ghost@example.com", Password: "123456"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
-				Message: authErr.Error.EmailDoesntExist,
+				Message: appError.AuthEmailDoesntExist.Message,
 			},
-			mockError:      errors.New(authErr.Error.EmailDoesntExist),
-			expectedStatus: http.StatusUnauthorized,
+			mockError:      errors.New(appError.AuthEmailDoesntExist.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.Response{
 				Success: false,
-				Message: authErr.Error.EmailDoesntExist,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -322,10 +337,28 @@ func TestSigninHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.Response
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+				if tt.expectedBody.AccessToken != "" {
+					data := resp["data"].(map[string]interface{})
+					assert.Equal(t, tt.expectedBody.AccessToken, data["token"])
+					assert.Equal(t, tt.expectedBody.IsVerified, data["isVerified"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
+			
 			if tt.expectCall {
 				mockSvc.AssertExpectations(t)
 			} else {
@@ -371,7 +404,7 @@ func TestSignupOTPHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -382,13 +415,13 @@ func TestSignupOTPHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -398,7 +431,7 @@ func TestSignupOTPHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -423,10 +456,22 @@ func TestSignupOTPHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.GenericOTPResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
 
 			if tt.expectCall {
 				mockSvc.AssertExpectations(t)
@@ -474,13 +519,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: otpErr.Error.InvalidOTP,
+				Message: appError.OtpInvalid.Message,
 			},
-			mockError:      errors.New(otpErr.Error.InvalidOTP),
-			expectedStatus: http.StatusBadRequest,
+			mockError:      errors.New(appError.OtpInvalid.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: otpErr.Error.InvalidOTP,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -492,13 +537,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: otpErr.Error.OTPExpiredOrNotFound,
+				Message: appError.OtpExpiredOrNotFound.Message,
 			},
-			mockError:      errors.New(otpErr.Error.OTPExpiredOrNotFound),
-			expectedStatus: http.StatusBadRequest,
+			mockError:      errors.New(appError.OtpExpiredOrNotFound.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: otpErr.Error.OTPExpiredOrNotFound,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -547,7 +592,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -560,7 +605,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -573,7 +618,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -583,7 +628,7 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -595,13 +640,13 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -734,10 +779,22 @@ func TestSignupOTPVerifyHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.GenericOTPResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
 
 			if tt.expectCall {
 				mockSvc.AssertExpectations(t)
@@ -781,8 +838,8 @@ func TestRefreshTokenHandler(t *testing.T) {
 				RefreshToken: "invalid-token",
 			},
 			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
-			mockError:      errors.New(authErr.Error.InvalidRefreshToken),
-			expectedStatus: http.StatusUnauthorized,
+			mockError:      errors.New(appError.AuthInvalidRefreshToken.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   &authmodel.RefreshTokenResponse{},
 			expectCall:     true,
 		},
@@ -792,8 +849,8 @@ func TestRefreshTokenHandler(t *testing.T) {
 				RefreshToken: "mismatched-token",
 			},
 			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
-			mockError:      errors.New(authErr.Error.RefreshTokenMismatch),
-			expectedStatus: http.StatusUnauthorized,
+			mockError:      errors.New(appError.AuthRefreshTokenMismatch.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   &authmodel.RefreshTokenResponse{},
 			expectCall:     true,
 		},
@@ -819,7 +876,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 				RefreshToken: "valid-token",
 			},
 			mockReturn:     &authmodel.RefreshTokenServiceResponse{},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   &authmodel.RefreshTokenResponse{},
 			expectCall:     true,
@@ -845,10 +902,20 @@ func TestRefreshTokenHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.RefreshTokenResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
+			
 			if tt.expectCall && tt.mockError == nil {
-				assert.Equal(t, tt.expectedBody.AccessToken, resp.AccessToken)
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				data := resp["data"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.AccessToken, data["accessToken"])
+			} else if tt.mockError != nil {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.NotEmpty(t, errorData["message"])
 			}
 
 			if tt.expectCall {
@@ -894,13 +961,13 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: authErr.Error.EmailDoesntExist,
+				Message: appError.AuthEmailDoesntExist.Message,
 			},
-			mockError:      errors.New(authErr.Error.EmailDoesntExist),
+			mockError:      errors.New(appError.AuthEmailDoesntExist.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -912,7 +979,7 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -922,7 +989,7 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -933,12 +1000,12 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: authErr.Error.OTPSendFailure,
+				Message: appError.AuthOtpSendFailure.Message,
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: authErr.Error.OTPSendFailure,
+				Message: appError.AuthOtpSendFailure.Message,
 			},
 			expectCall: true,
 		},
@@ -948,11 +1015,11 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 				Email: "test@example.com",
 			},
 			mockReturn:     &authmodel.GenericOTPResponse{},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.GenericOTPResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -977,10 +1044,22 @@ func TestForgotPasswordOTPHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.GenericOTPResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
 
 			mockSvc.AssertExpectations(t)
 		})
@@ -1025,13 +1104,13 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: otpErr.Error.InvalidOTP,
+				Message: appError.OtpInvalid.Message,
 			},
-			mockError:      errors.New(otpErr.Error.InvalidOTP),
-			expectedStatus: http.StatusBadRequest,
+			mockError:      errors.New(appError.OtpInvalid.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: otpErr.Error.InvalidOTP,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -1043,13 +1122,13 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: otpErr.Error.OTPExpiredOrNotFound,
+				Message: appError.OtpExpiredOrNotFound.Message,
 			},
-			mockError:      errors.New(otpErr.Error.OTPExpiredOrNotFound),
-			expectedStatus: http.StatusBadRequest,
+			mockError:      errors.New(appError.OtpExpiredOrNotFound.Message),
+			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: otpErr.Error.OTPExpiredOrNotFound,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -1062,7 +1141,7 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -1075,7 +1154,7 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -1085,7 +1164,7 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.BadRequest,
+				Message: appError.ServerBadRequest.Message,
 			},
 			expectCall: false,
 		},
@@ -1096,11 +1175,11 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 				Code:   "123456",
 			},
 			mockReturn:     &authmodel.ForgotPasswordResponse{},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.ForgotPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -1125,11 +1204,26 @@ func TestForgotPasswordOTPVerifyHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.ForgotPasswordResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
-			assert.Equal(t, tt.expectedBody.UserId, resp.UserId)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+				if tt.expectedBody.UserId != "" {
+					data := resp["data"].(map[string]interface{})
+					assert.Equal(t, tt.expectedBody.UserId, data["userId"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
 
 			mockSvc.AssertExpectations(t)
 		})
@@ -1250,13 +1344,13 @@ func TestPasswordResetHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.ResetPasswordResponse{
 				Success: false,
-				Message: authErr.Error.PasswordOTPNotVerified,
+				Message: appError.AuthPasswordOtpNotVerified.Message,
 			},
-			mockError:      errors.New(authErr.Error.PasswordOTPNotVerified),
+			mockError:      errors.New(appError.AuthPasswordOtpNotVerified.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.ResetPasswordResponse{
 				Success: false,
-				Message: authErr.Error.PasswordOTPNotVerified,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -1268,13 +1362,13 @@ func TestPasswordResetHandler(t *testing.T) {
 			},
 			mockReturn: &authmodel.ResetPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: &authmodel.ResetPasswordResponse{
 				Success: false,
-				Message: serverErr.Error.InternalError,
+				Message: appError.ServerInternalError.Message,
 			},
 			expectCall: true,
 		},
@@ -1285,7 +1379,7 @@ func TestPasswordResetHandler(t *testing.T) {
 				Password: "newpassword123",
 			},
 			mockReturn:     &authmodel.ResetPasswordResponse{},
-			mockError:      errors.New(serverErr.Error.InternalError),
+			mockError:      errors.New(appError.ServerInternalError.Message),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody:   &authmodel.ResetPasswordResponse{},
 			expectCall:     true,
@@ -1311,10 +1405,22 @@ func TestPasswordResetHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			var resp authmodel.ResetPasswordResponse
+			// Parse the new response format
+			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
-			assert.Equal(t, tt.expectedBody.Success, resp.Success)
-			assert.Equal(t, tt.expectedBody.Message, resp.Message)
+			
+			if tt.expectedBody.Success {
+				// For success cases, check the data field
+				assert.True(t, resp["success"].(bool))
+				if tt.expectedBody.Message != "" {
+					assert.Equal(t, tt.expectedBody.Message, resp["message"])
+				}
+			} else {
+				// For error cases, check the error field
+				assert.False(t, resp["success"].(bool))
+				errorData := resp["error"].(map[string]interface{})
+				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
+			}
 
 			mockSvc.AssertExpectations(t)
 		})

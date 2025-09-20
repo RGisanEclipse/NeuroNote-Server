@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
 	"github.com/sirupsen/logrus"
 )
@@ -31,19 +31,19 @@ var baseURL = "https://api.brevo.com/v3/smtp/email"
 func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoRequest) (phoenix.Response, error) {
 	bodyBytes, err := json.Marshal(request)
 	if err != nil {
-		logger.Error(serverErr.Error.JSONMarshalError, err)
+		logger.Error("Failed to marshal JSON", err, appError.ServerJSONMarshalError)
 		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.Error.JSONMarshalError,
+			Error:   appError.ServerJSONMarshalError.Message,
 		}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", baseURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logger.Error(serverErr.Error.RequestCreationFailure, err)
+		logger.Error("Failed to create request", err, appError.ServerRequestCreationFailure)
 		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.Error.RequestCreationFailure,
+			Error:   appError.ServerRequestCreationFailure.Message,
 		}, err
 	}
 
@@ -52,25 +52,25 @@ func (c *BrevoClient) SendEmail(ctx context.Context, request phoenix.BrevoReques
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		logger.Error(serverErr.Error.RequestDeliveryFailure, err)
+		logger.Error("Failed to send request", err, appError.ServerRequestDeliveryFailure)
 		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.Error.RequestDeliveryFailure,
+			Error:   appError.ServerRequestDeliveryFailure.Message,
 		}, err
 	}
 	defer resp.Body.Close()
 
 	var brevoResponse phoenix.BrevoResponse
 	if err := json.NewDecoder(resp.Body).Decode(&brevoResponse); err != nil {
-		logger.Error(serverErr.Error.JSONUnmarshalError, err)
+		logger.Error("Failed to unmarshal JSON", err, appError.ServerJSONUnmarshalError)
 		return phoenix.Response{
 			Success: false,
-			Error:   serverErr.Error.JSONUnmarshalError,
+			Error:   appError.ServerJSONUnmarshalError.Message,
 		}, err
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		logger.Error(serverErr.Error.Non200ResponseError, nil)
+		logger.Error("Received non-200 response", errors.New(brevoResponse.Message), appError.ServerNon200ResponseError)
 		return phoenix.Response{
 			Success: false,
 			Error:   brevoResponse.Message,

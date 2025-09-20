@@ -3,13 +3,12 @@ package redis
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,7 +28,7 @@ func InitRedis() error {
 
 	if redisHost == "" || redisPort == "" {
 		err := fmt.Errorf("missing REDIS_HOST or REDIS_PORT environment variables for Redis")
-		logger.Error(db.Redis.ConnectionFailed, err)
+		logger.Error(appError.RedisConnectionFailed.Message, err,appError.RedisConnectionFailed)
 		return err
 	}
 
@@ -66,7 +65,7 @@ func InitRedis() error {
 		time.Sleep(2 * time.Second)
 	}
 
-	return errors.New(db.Redis.ConnectionFailed)
+	return appError.RedisConnectionFailed
 }
 
 func (r *Repo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {

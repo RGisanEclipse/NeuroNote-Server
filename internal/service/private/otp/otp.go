@@ -5,13 +5,10 @@ import (
 	"errors"
 	"time"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
-	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
-	phoenixErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/phoenix"
-	serverErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	otpTemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates/otp"
 	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
@@ -43,41 +40,41 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 
 	// Validate purpose first
 	if !otpTemplates.IsValidPurpose(purpose) {
-		logger.Warn("Invalid purpose provided", nil, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Warn("Invalid purpose provided", errors.New("invalid purpose"), appError.OtpInvalidPurpose, logFields)
+		return false, appError.OtpInvalidPurpose
 	}
 
 	otp := otpUtils.GenerateOTP()
 	err := s.redisrepo.SetOTP(ctx, userId, otp, 5*time.Minute, purpose)
 	if err != nil {
-		logger.Error("Failed to set OTP in Redis", err, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Error("Failed to set OTP in Redis", err, appError.ServerInternalError, logFields)
+		return false, appError.ServerInternalError
 	}
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.EmailQueryFailed, err, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Error("Failed to get user email", err, appError.DBEmailQueryFailed, logFields)
+		return false, appError.ServerInternalError
 	}
 	if email == "" {
-		logger.Error(otpErr.Error.EmptyEmailForUser, nil, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Error("Empty email for user", errors.New("email empty for user"), appError.OtpEmptyEmailForUser, logFields)
+		return false, appError.OtpEmptyEmailForUser
 	}
 
 	template, err := otpTemplates.GetTemplate(otp, purpose)
 
 	if err != nil {
-		logger.Warn("Error getting template for purpose", err, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Warn("Error getting template for purpose", err, appError.ServerInternalError, logFields)
+		return false, appError.ServerInternalError
 	}
 
 	err = s.phoenixservice.SendMail(ctx, userId, template)
 	if err != nil {
-		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, err, logger.Fields{
+		logger.Error("Failed to send email", err, appError.PhoenixEmailDeliveryFailed, logger.Fields{
 			"userId":       userId,
 			"requestId":    requestId,
 			"errorMessage": err.Error(),
 		})
-		return false, errors.New(serverErr.Error.InternalError)
+		return false, appError.ServerInternalError
 	}
 
 	return true, nil
@@ -93,39 +90,39 @@ func (s *Service) VerifyOTP(ctx context.Context, userID string, code string, pur
 
 	// Validate purpose first
 	if !otpTemplates.IsValidPurpose(purpose) {
-		logger.Warn("Invalid purpose provided", nil, logFields)
-		return false, errors.New(serverErr.Error.InternalError)
+		logger.Warn("Invalid purpose provided", errors.New("invalid purpose"), appError.OtpInvalidPurpose, logFields)
+		return false, appError.OtpInvalidPurpose
 	}
 
 	storedOTP, err := s.redisrepo.GetOTP(ctx, userID, purpose)
 	if err != nil {
-		logger.Error(dbErr.Redis.GetOTPFailed, err, logger.Fields{
+		logger.Error("Failed to get OTP from Redis", err, appError.RedisGetOtpFailed, logger.Fields{
 			"userId":       userID,
 			"requestId":    requestId,
-			"errorMessage": dbErr.Redis.GetOTPFailed,
+			"errorMessage": err.Error(),
 		})
-		return false, errors.New(serverErr.Error.InternalError)
+		return false, appError.ServerInternalError
 	}
 
 	if storedOTP == "" {
-		logger.Error(otpErr.Error.OTPExpiredOrNotFound, nil, logger.Fields{
+		logger.Error("OTP expired or not found", errors.New("otp expired or not found"), appError.OtpExpiredOrNotFound, logger.Fields{
 			"userId":    userID,
 			"requestId": requestId,
 		})
-		return false, errors.New(otpErr.Error.OTPExpiredOrNotFound)
+		return false, appError.OtpExpiredOrNotFound
 	}
 
 	if code != storedOTP {
-		logger.Error(otpErr.Error.InvalidOTP, nil, logger.Fields{
+		logger.Error("Invalid OTP provided", errors.New("invalid otp"), appError.OtpInvalid, logger.Fields{
 			"userId":      userID,
 			"requestId":   requestId,
 			"providedOTP": code,
 		})
-		return false, errors.New(otpErr.Error.InvalidOTP)
+		return false, appError.OtpInvalid
 	}
 
 	if err := s.redisrepo.DeleteOTP(ctx, userID, purpose); err != nil {
-		logger.Warn("Failed to delete OTP after verification", err, logger.Fields{
+		logger.Warn("Failed to delete OTP after verification", err, appError.ServerInternalError, logger.Fields{
 			"userId":    userID,
 			"requestId": requestId,
 			"purpose":   purpose,
