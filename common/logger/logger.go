@@ -10,9 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// public alias so callers can write logger.Fields{…} 
+// public alias so callers can write logger.Fields{…}
 type Fields = logrus.Fields
-
 
 var log = logrus.New()
 
@@ -26,23 +25,44 @@ func init() {
 }
 
 // captureStack collects a trimmed stack trace (skips logger frames)
-func captureStack() []string {
-	const maxFrames = 32
-	pcs := make([]uintptr, maxFrames)
-	n := runtime.Callers(3, pcs) 
+func captureStack() string {
+	const maxFrames = 50
+	var pcs [maxFrames]uintptr
+	n := runtime.Callers(2, pcs[:])
+	if n == 0 {
+		return "empty stack trace"
+	}
 	frames := runtime.CallersFrames(pcs[:n])
+	var sb strings.Builder
 
-	var out []string
+	frameNum := 0
 	for {
-		f, more := frames.Next()
-		if !strings.Contains(f.Function, "/common/logger") { 
-			out = append(out, fmt.Sprintf("%s\n\t%s:%d", f.Function, f.File, f.Line))
-		}
+		frame, more := frames.Next()
+		sb.WriteString(fmt.Sprintf("#%d %s:%d %s\n",
+			frameNum,
+			frame.File,
+			frame.Line,
+			frame.Function,
+		))
 		if !more {
 			break
 		}
+		frameNum++
 	}
-	return out
+	return strings.TrimSpace(sb.String())
+}
+
+// captureCaller returns just the calling function name and location
+func captureCaller() string {
+	const maxFrames = 10
+	var pcs [maxFrames]uintptr
+	n := runtime.Callers(3, pcs[:])
+	if n == 0 {
+		return "unknown caller"
+	}
+	frames := runtime.CallersFrames(pcs[:n])
+	frame, _ := frames.Next()
+	return fmt.Sprintf("%s:%d %s", frame.File, frame.Line, frame.Function)
 }
 
 // helpers
@@ -65,12 +85,12 @@ func Debug(msg string, fields ...Fields) {
 
 func Warn(msg string, err error, fields ...Fields) {
 	if err == nil {
-		err = errors.New(msg) 
+		err = errors.New(msg)
 	}
 
 	entry := log.WithFields(Fields{
-		"error":    err.Error(),
-		"function": captureStack()[0],
+		"error":  err.Error(),
+		"caller": captureCaller(),
 	})
 	if len(fields) > 0 {
 		entry = entry.WithFields(fields[0])
@@ -84,11 +104,10 @@ func Error(msg string, err error, fields ...Fields) {
 		errStr = err.Error()
 	}
 
-	stack := captureStack()
 	entry := log.WithFields(Fields{
-		"error":    errStr,
-		"function": stack[0], 
-		"stack":    stack,    
+		"error":  errStr,
+		"caller": captureCaller(),
+		"stack":  captureStack(),
 	})
 	if len(fields) > 0 {
 		entry = entry.WithFields(fields[0])
