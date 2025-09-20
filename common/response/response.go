@@ -34,20 +34,10 @@ func WriteSuccess(w http.ResponseWriter, data interface{}, message ...string) {
 }
 
 // WriteError writes an error response with error code
-func WriteError(w http.ResponseWriter, errorCode apperror.Code, data ...interface{}) {
+func WriteError(w http.ResponseWriter, errorCode *apperror.Code, data ...interface{}) {
 	response := apperror.NewErrorResponse(errorCode.Code, errorCode.Message, errorCode.Status)
 	if len(data) > 0 {
 		response.Data = data[0]
 	}
 	WriteJSON(w, errorCode.Status, response)
-}
-
-// WriteErrorWithCode writes an error response using error code string
-func WriteErrorWithCode(w http.ResponseWriter, code string, data ...interface{}) {
-	if errorCode, exists := apperror.GetErrorByCode(code); exists {
-		WriteError(w, errorCode, data...)
-	} else {
-		// Fallback to internal server error if code not found
-		WriteError(w, apperror.ServerInternalError, data...)
-	}
 }

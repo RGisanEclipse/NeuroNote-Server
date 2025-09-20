@@ -12,13 +12,16 @@ type Code struct {
 }
 
 // Error implements the error interface
-func (e Code) Error() string {
+func (e *Code) Error() string {
+	if e == nil {
+		return ""
+	}
 	return e.Message
 }
 
 // NewErrorCode creates a new ErrorCode instance
-func NewErrorCode(code, message string, status int) Code {
-	return Code{
+func NewErrorCode(code, message string, status int) *Code {
+	return &Code{
 		Code:    code,
 		Message: message,
 		Status:  status,
@@ -27,9 +30,9 @@ func NewErrorCode(code, message string, status int) Code {
 
 // Response represents the API error response structure
 type Response struct {
-	Success bool `json:"success"`
-	Error   Code `json:"error"`
-	Data    any  `json:"data,omitempty"`
+	Success bool  `json:"success"`
+	Error   *Code `json:"error"`
+	Data    any   `json:"data,omitempty"`
 }
 
 // NewErrorResponse creates a new error response
@@ -106,6 +109,8 @@ const (
 	redisGetOtpFailed                 = "REDIS_005"
 	redisSetPasswordResetKeyFailed    = "REDIS_006"
 	redisDeletePasswordResetKeyFailed = "REDIS_007"
+	redisDeleteOTPFailed              = "REDIS_008"
+	redisSetOtpFailed                 = "REDIS_009"
 )
 
 // OTP errors (otp*)
@@ -189,8 +194,10 @@ var (
 	RedisGetRefreshTokenFailed        = NewErrorCode(redisGetRefreshTokenFailed, "failed to get refresh token", http.StatusInternalServerError)
 	RedisDeleteRefreshTokenFailed     = NewErrorCode(redisDeleteRefreshTokenFailed, "failed to delete refresh token", http.StatusInternalServerError)
 	RedisGetOtpFailed                 = NewErrorCode(redisGetOtpFailed, "failed to get OTP", http.StatusInternalServerError)
+	RedisSetOtpFailed                 = NewErrorCode(redisSetOtpFailed, "failed to set OTP", http.StatusInternalServerError)
 	RedisSetPasswordResetKeyFailed    = NewErrorCode(redisSetPasswordResetKeyFailed, "failed to set password reset key", http.StatusInternalServerError)
 	RedisDeletePasswordResetKeyFailed = NewErrorCode(redisDeletePasswordResetKeyFailed, "failed to delete password reset key", http.StatusInternalServerError)
+	RedisDeleteOTPFailed              = NewErrorCode(redisDeleteOTPFailed, "failed to delete OTP", http.StatusInternalServerError)
 
 	OtpInvalidRequest    = NewErrorCode(otpInvalidRequest, "invalid OTP request", http.StatusBadRequest)
 	OtpEmptyEmailForUser = NewErrorCode(otpEmptyEmailForUser, "email empty for user", http.StatusBadRequest)
@@ -218,8 +225,8 @@ var (
 )
 
 // GetErrorByCode maps string codes to ErrorCode objects
-func GetErrorByCode(code string) (Code, bool) {
-	errorMap := map[string]Code{
+func GetErrorByCode(code string) (*Code, bool) {
+	errorMap := map[string]*Code{
 		// Authentication
 		authEmailDoesntExist:       AuthEmailDoesntExist,
 		authEmailExists:            AuthEmailExists,

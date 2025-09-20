@@ -83,7 +83,7 @@ func Debug(msg string, fields ...Fields) {
 	}
 }
 
-func Error(msg string, err error, errorCode apperror.Code, fields ...Fields) {
+func Error(msg string, err error, errorCode *apperror.Code, fields ...Fields) {
 	var errStr string
 	if err != nil {
 		errStr = err.Error()
@@ -102,7 +102,7 @@ func Error(msg string, err error, errorCode apperror.Code, fields ...Fields) {
 	entry.Error(msg)
 }
 
-func Warn(msg string, err error, errorCode apperror.Code, fields ...Fields) {
+func Warn(msg string, err error, errorCode *apperror.Code, fields ...Fields) {
 	if err == nil {
 		err = errors.New(msg)
 	}

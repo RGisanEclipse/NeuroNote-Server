@@ -31,7 +31,7 @@ func New(userrepo userrepo.Repository, redisrepo redisrepo.Repository, otpServic
 
 // Signup registers a new user and returns a JWT token.
 // It checks if the email is already taken, hashes the password, creates the user
-func (s *Service) Signup(ctx context.Context, email, password string) (authModels.ServiceResponse, error) {
+func (s *Service) Signup(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code) {
 
 	exists, err := s.userrepo.UserExists(ctx, email)
 	reqID := request.FromContext(ctx)
@@ -116,7 +116,7 @@ func (s *Service) Signup(ctx context.Context, email, password string) (authModel
 
 // Signin authenticates a user and returns a JWT token.
 // It checks if the user exists, verifies the password, and generates a token.
-func (s *Service) Signin(ctx context.Context, email, password string) (authModels.ServiceResponse, error) {
+func (s *Service) Signin(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code) {
 	creds, err := s.userrepo.GetUserCreds(ctx, email)
 	reqID := request.FromContext(ctx)
 
@@ -192,7 +192,7 @@ func (s *Service) Signin(ctx context.Context, email, password string) (authModel
 	}, nil
 }
 
-func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, error) {
+func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 
 	claims, err := authutils.VerifyAuthToken(refreshToken)
@@ -257,7 +257,7 @@ func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (authMo
 	}, nil
 }
 
-func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.GenericOTPResponse, error) {
+func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.GenericOTPResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 
 	logFields := logger.Fields{
@@ -266,13 +266,21 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 		"purpose":   "signup",
 	}
 
-	success, err := s.otpService.RequestOTP(ctx, userId, "signup")
+	success, errCode, err := s.otpService.RequestOTP(ctx, userId, "signup")
 	if err != nil {
-		logger.Error("Failed to send OTP due to service error", err, appError.AuthInternalServiceError, logFields)
+		logger.Error("Failed to send OTP due to service error", err, appError.ServerInternalError, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: appError.AuthInternalServiceError.Message,
-		}, err
+			Message: err.Error(),
+		}, appError.ServerInternalError
+	}
+
+	if errCode != nil {
+		logger.Warn("OTP service returned business error", nil, errCode, logFields)
+		return authModels.GenericOTPResponse{
+			Success: false,
+			Message: errCode.Message,
+		}, errCode
 	}
 
 	if !success {
@@ -280,7 +288,7 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 		return authModels.GenericOTPResponse{
 			Success: false,
 			Message: appError.AuthOtpSendFailure.Message,
-		}, nil
+		}, appError.AuthOtpSendFailure
 	}
 
 	logger.Info("Signup OTP sent successfully", logFields)
@@ -291,7 +299,7 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 	}, nil
 }
 
-func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (authModels.GenericOTPResponse, error) {
+func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (authModels.GenericOTPResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 
 	logFields := logger.Fields{
@@ -300,42 +308,42 @@ func (s *Service) SignupOTPVerify(ctx context.Context, userId, otp string) (auth
 		"purpose":   "signup",
 	}
 
-	success, err := s.otpService.VerifyOTP(ctx, userId, otp, "signup")
-	if err != nil {
-		logger.Error("Failed to verify OTP due to service error", err, appError.AuthInternalServiceError, logFields)
+	success, logicalError, sysErr := s.otpService.VerifyOTP(ctx, userId, otp, "signup")
+
+	if sysErr != nil {
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: appError.AuthInternalServiceError.Message,
-		}, err
+			Message: "Internal server error",
+		}, appError.ServerInternalError
 	}
 
-	if !success {
-		logger.Warn("OTP verification failed", nil, appError.AuthOtpVerificationFailure, logFields)
+	if logicalError != nil {
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: appError.AuthOtpVerificationFailure.Message,
-		}, nil
+			Message: logicalError.Message,
+		}, logicalError
 	}
-	err = s.userrepo.MarkUserVerified(ctx, userId)
 
-	if err != nil {
-		logger.Warn(appError.DBUpdateFailed.Message, err, appError.DBUpdateFailed, logFields)
+	dbErr := s.userrepo.MarkUserVerified(ctx, userId)
+
+	if dbErr != nil {
+		logger.Warn(appError.DBUpdateFailed.Message, dbErr, appError.DBUpdateFailed, logFields)
 
 		return authModels.GenericOTPResponse{
 			Success: false,
 			Message: "Failed to mark user as verified",
-		}, nil
+		}, appError.DBUpdateFailed
 	}
 
 	logger.Info("Signup OTP verified successfully", logFields)
 
 	return authModels.GenericOTPResponse{
-		Success: true,
+		Success: success,
 		Message: "OTP verified successfully",
 	}, nil
 }
 
-func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authModels.GenericOTPResponse, error) {
+func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authModels.GenericOTPResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 	creds, err := s.userrepo.GetUserCreds(ctx, email)
 
@@ -351,8 +359,8 @@ func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authMode
 			}, appError.AuthEmailDoesntExist
 		}
 		return authModels.GenericOTPResponse{
-			Success: true,
-			Message: "OTP sent if password exists",
+			Success: false,
+			Message: appError.ServerInternalError.Message,
 		}, appError.ServerInternalError
 	}
 
@@ -363,32 +371,33 @@ func (s *Service) ForgotPasswordOTP(ctx context.Context, email string) (authMode
 		"purpose":   "forgot_password",
 	}
 
-	success, err := s.otpService.RequestOTP(ctx, userId, "forgot_password")
-	if err != nil {
-		logger.Error("Failed to send OTP due to service error", err, appError.AuthInternalServiceError, logFields)
+	success, logicalError, sysErr := s.otpService.RequestOTP(ctx, userId, "forgot_password")
+
+	if sysErr != nil {
+		logger.Error("Failed to send OTP due to system error", sysErr, nil, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: appError.AuthInternalServiceError.Message,
-		}, err
+			Message: appError.ServerInternalError.Message,
+		}, appError.ServerInternalError
 	}
 
-	if !success {
-		logger.Warn("OTP service returned unsuccessful result", nil, appError.AuthOtpSendFailure, logFields)
+	if logicalError != nil {
+		logger.Warn("Failed to send OTP due to logical error", logicalError, logicalError, logFields)
 		return authModels.GenericOTPResponse{
 			Success: false,
-			Message: appError.AuthOtpSendFailure.Message,
-		}, nil
+			Message: logicalError.Message,
+		}, logicalError
 	}
 
 	logger.Info("Forgot Password OTP sent successfully", logFields)
 
 	return authModels.GenericOTPResponse{
-		Success: true,
-		Message: "OTP sent if password exists",
+		Success: success,
+		Message: "OTP sent successfully",
 	}, nil
 }
 
-func (s *Service) ForgotPasswordOTPVerify(ctx context.Context, userId string, otp string) (authModels.ForgotPasswordResponse, error) {
+func (s *Service) ForgotPasswordOTPVerify(ctx context.Context, userId, otp string) (authModels.ForgotPasswordResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 
 	logFields := logger.Fields{
@@ -397,26 +406,26 @@ func (s *Service) ForgotPasswordOTPVerify(ctx context.Context, userId string, ot
 		"purpose":   "forgot_password",
 	}
 
-	success, err := s.otpService.VerifyOTP(ctx, userId, otp, "forgot_password")
-	if err != nil {
-		logger.Error("Failed to verify OTP due to service error", err, appError.AuthInternalServiceError, logFields)
+	// Now returns success, logicalError, sysErr like SignupOTPVerify
+	success, logicalError, sysErr := s.otpService.VerifyOTP(ctx, userId, otp, "forgot_password")
+
+	if sysErr != nil {
 		return authModels.ForgotPasswordResponse{
 			Success: false,
-			Message: appError.AuthInternalServiceError.Message,
-		}, err
+			Message: "Internal server error",
+		}, appError.ServerInternalError
 	}
 
-	if !success {
-		logger.Warn("OTP verification failed", nil, appError.AuthOtpVerificationFailure, logFields)
+	if logicalError != nil {
 		return authModels.ForgotPasswordResponse{
 			Success: false,
-			Message: appError.AuthOtpVerificationFailure.Message,
-		}, nil
+			Message: logicalError.Message,
+		}, logicalError
 	}
 
-	err = s.redisrepo.SetPasswordResetFlag(ctx, userId, ResetPasswordExpiry)
-	if err != nil {
-		logger.Warn(appError.RedisSetPasswordResetKeyFailed.Message, err, appError.RedisSetPasswordResetKeyFailed, logFields)
+	redisErr := s.redisrepo.SetPasswordResetFlag(ctx, userId, ResetPasswordExpiry)
+	if redisErr != nil {
+		logger.Warn(appError.RedisSetPasswordResetKeyFailed.Message, redisErr, appError.RedisSetPasswordResetKeyFailed, logFields)
 		return authModels.ForgotPasswordResponse{
 			Success: false,
 			Message: appError.ServerInternalError.Message,
@@ -426,13 +435,13 @@ func (s *Service) ForgotPasswordOTPVerify(ctx context.Context, userId string, ot
 	logger.Info("Forgot Password OTP verified successfully", logFields)
 
 	return authModels.ForgotPasswordResponse{
-		Success: true,
+		Success: success,
 		Message: "OTP verified successfully",
 		UserId:  userId,
 	}, nil
 }
 
-func (s *Service) ResetPassword(ctx context.Context, userId string, password string) (authModels.ResetPasswordResponse, error) {
+func (s *Service) ResetPassword(ctx context.Context, userId string, password string) (authModels.ResetPasswordResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 
 	logFields := logger.Fields{
@@ -480,7 +489,7 @@ func (s *Service) ResetPassword(ctx context.Context, userId string, password str
 		return authModels.ResetPasswordResponse{
 			Success: false,
 			Message: "Password doesn't match the required criteria",
-		}, err
+		}, appError.PasswordTooShort
 	}
 
 	hash, err := authutils.HashPassword(password)
@@ -500,7 +509,7 @@ func (s *Service) ResetPassword(ctx context.Context, userId string, password str
 		return authModels.ResetPasswordResponse{
 			Success: false,
 			Message: "Failed to reset password",
-		}, nil
+		}, appError.DBUpdateFailed
 	}
 
 	err = s.redisrepo.DeletePasswordResetFlag(ctx, userId)
