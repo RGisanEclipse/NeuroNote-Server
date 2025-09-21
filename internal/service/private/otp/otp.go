@@ -59,7 +59,7 @@ func (s *Service) RequestOTP(ctx context.Context, userId string, purpose string)
 		return false, nil, err
 	}
 	if email == "" {
-		logger.Error("Empty email for user", errors.New("email empty for user"), appError.OtpEmptyEmailForUser, logFields)
+		logger.Warn("Empty email for user", errors.New("email empty for user"), appError.OtpEmptyEmailForUser, logFields)
 		return false, appError.OtpEmptyEmailForUser, nil
 	}
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -104,6 +105,18 @@ func signinHandler(svc authservice.S) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody)
 			response.WriteError(w, appError.ServerBadRequest)
+			return
+		}
+
+		if err := req.Validate(); err != nil {
+			var errCode *appError.Code
+			if errors.As(err, &errCode) {
+				logger.Warn(errCode.Message, nil, errCode, logger.Fields{
+					"email":     req.Email,
+					"requestId": reqID,
+				})
+				response.WriteError(w, errCode)
+			}
 			return
 		}
 

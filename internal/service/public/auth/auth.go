@@ -267,13 +267,6 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 	}
 
 	success, errCode, err := s.otpService.RequestOTP(ctx, userId, "signup")
-	if err != nil {
-		logger.Error("Failed to send OTP due to service error", err, appError.ServerInternalError, logFields)
-		return authModels.GenericOTPResponse{
-			Success: false,
-			Message: err.Error(),
-		}, appError.ServerInternalError
-	}
 
 	if errCode != nil {
 		logger.Warn("OTP service returned business error", nil, errCode, logFields)
@@ -281,6 +274,14 @@ func (s *Service) SignupOTP(ctx context.Context, userId string) (authModels.Gene
 			Success: false,
 			Message: errCode.Message,
 		}, errCode
+	}
+
+	if err != nil {
+		logger.Error("Failed to send OTP due to service error", err, appError.ServerInternalError, logFields)
+		return authModels.GenericOTPResponse{
+			Success: false,
+			Message: err.Error(),
+		}, appError.ServerInternalError
 	}
 
 	if !success {
