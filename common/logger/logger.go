@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	apperror "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/sirupsen/logrus"
@@ -16,12 +17,30 @@ type Fields = logrus.Fields
 var log = logrus.New()
 
 func init() {
-	log.SetOutput(os.Stdout)
+	file, err := os.OpenFile("./logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err == nil {
+		log.SetOutput(file)
+	} else {
+		fmt.Println("Failed to log to file, using default stdout")
+	}
+
 	log.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: "2006-01-02 15:04:05",
 		PrettyPrint:     false,
 	})
 	log.SetLevel(logrus.DebugLevel)
+
+	// Loki integration
+	lokiURL := os.Getenv("LOKI_URL")
+	if lokiURL != "" {
+		hook := &LokiHook{
+			URL:       lokiURL,
+			Labels:    map[string]string{"app": "neuronote-server", "env": "dev"},
+			BatchWait: 1 * time.Second,
+			BatchSize: 100,
+		}
+		log.AddHook(hook)
+	}
 }
 
 // captureStack collects a trimmed stack trace (skips logger frames)

@@ -277,7 +277,7 @@ func TestSigninHandler(t *testing.T) {
 	}{
 		{
 			name:    "Success",
-			request: authmodel.Request{Email: "user@example.com", Password: "123456"},
+			request: authmodel.Request{Email: "user@example.com", Password: "ValidPass123@"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success:     true,
 				Message:     "Logged in successfully",
@@ -296,7 +296,7 @@ func TestSigninHandler(t *testing.T) {
 		},
 		{
 			name:    "WrongPassword",
-			request: authmodel.Request{Email: "user@example.com", Password: "wrong"},
+			request: authmodel.Request{Email: "user@example.com", Password: "wrongPassword1@"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
 				Message: appError.AuthIncorrectPassword.Message,
@@ -311,7 +311,7 @@ func TestSigninHandler(t *testing.T) {
 		},
 		{
 			name:    "EmailDoesNotExist",
-			request: authmodel.Request{Email: "ghost@example.com", Password: "123456"},
+			request: authmodel.Request{Email: "ghost@example.com", Password: "randomPassword!2"},
 			mockReturn: &authmodel.ServiceResponse{
 				Success: false,
 				Message: appError.AuthEmailDoesntExist.Message,
@@ -460,12 +460,12 @@ func TestSignupOTPHandler(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 
-		r.ServeHTTP(rec, req)
-		assert.Equal(t, tt.expectedStatus, rec.Code)
+			r.ServeHTTP(rec, req)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-		// Parse the new response format
-		var resp map[string]interface{}
-		_ = json.NewDecoder(rec.Body).Decode(&resp)
+			// Parse the new response format
+			var resp map[string]interface{}
+			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
 			if tt.expectedBody.Success {
 				// For success cases, check the data field
@@ -482,11 +482,11 @@ func TestSignupOTPHandler(t *testing.T) {
 				assert.Equal(t, tt.expectedBody.Message, errorData["message"])
 			}
 
-		if tt.expectCall {
-			mockSvc.AssertExpectations(t)
-		} else {
-			mockSvc.AssertNotCalled(t, "SignupOTP")
-		}
+			if tt.expectCall {
+				mockSvc.AssertExpectations(t)
+			} else {
+				mockSvc.AssertNotCalled(t, "SignupOTP")
+			}
 		})
 	}
 }
@@ -1419,7 +1419,7 @@ func TestPasswordResetHandler(t *testing.T) {
 				Success: false,
 				Message: appError.ServerInternalError.Message,
 			},
-			expectCall:     true,
+			expectCall: true,
 		},
 	}
 

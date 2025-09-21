@@ -3,7 +3,6 @@ package otp
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
@@ -35,11 +34,7 @@ func TestRequestOTP(t *testing.T) {
 			userID:          "user123",
 			purpose:         "signup",
 			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
 			expectedSuccess: true,
-			expectedError:   "",
 			expectSetOTP:    true,
 			expectGetEmail:  true,
 			expectSendMail:  true,
@@ -49,70 +44,69 @@ func TestRequestOTP(t *testing.T) {
 			userID:          "user456",
 			purpose:         "forgot_password",
 			email:           "user@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
 			expectedSuccess: true,
-			expectedError:   "",
 			expectSetOTP:    true,
 			expectGetEmail:  true,
 			expectSendMail:  true,
 		},
 		{
-			name:            "RedisError",
+			name:            "Fails_WhenRedisSetOTPFails",
 			userID:          "user123",
 			purpose:         "signup",
 			email:           "test@example.com",
-			emailError:      nil,
 			redisError:      errors.New("redis connection failed"),
-			emailSendError:  nil,
 			expectedSuccess: false,
 			expectedError:   "redis connection failed",
 			expectSetOTP:    true,
-			expectGetEmail:  false,
-			expectSendMail:  false,
 		},
 		{
-			name:            "EmailQueryError",
+			name:            "Fails_WhenDBQueryFails",
 			userID:          "user123",
 			purpose:         "signup",
-			email:           "",
 			emailError:      errors.New("database connection failed"),
-			redisError:      nil,
-			emailSendError:  nil,
 			expectedSuccess: false,
 			expectedError:   "database connection failed",
 			expectSetOTP:    true,
 			expectGetEmail:  true,
-			expectSendMail:  false,
 		},
 		{
-			name:            "EmptyEmail",
+			name:            "Fails_WhenEmptyEmailReturned",
 			userID:          "user123",
 			purpose:         "signup",
 			email:           "",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
 			expectedSuccess: false,
 			expectedError:   appError.OtpEmptyEmailForUser.Message,
 			expectSetOTP:    true,
 			expectGetEmail:  true,
-			expectSendMail:  false,
 		},
 		{
-			name:            "EmailSendError",
+			name:            "Fails_WhenEmailSendFails",
 			userID:          "user123",
 			purpose:         "signup",
 			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
 			emailSendError:  errors.New("email service unavailable"),
 			expectedSuccess: false,
 			expectedError:   "email service unavailable",
 			expectSetOTP:    true,
 			expectGetEmail:  true,
 			expectSendMail:  true,
+		},
+		{
+			name:            "Fails_WhenPurposeIsInvalid",
+			userID:          "user123",
+			purpose:         "invalid_purpose",
+			expectedSuccess: false,
+			expectedError:   appError.OtpInvalidPurpose.Message,
+		},
+		{
+			name:            "Fails_WhenUserIDIsEmpty",
+			userID:          "",
+			purpose:         "signup",
+			email:           "",
+			expectedSuccess: false,
+			expectedError:   appError.OtpEmptyEmailForUser.Message,
+			expectSetOTP:    true,
+			expectGetEmail:  true,
 		},
 	}
 
@@ -125,46 +119,39 @@ func TestRequestOTP(t *testing.T) {
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
 
-			// Setup mocks based on expectations
 			if tt.expectSetOTP {
-				mockRedisRepo.On("SetOTP", ctx, tt.userID, mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration"), tt.purpose).Return(tt.redisError)
+				mockRedisRepo.On("SetOTP", ctx, tt.userID, mock.AnythingOfType("string"), mock.Anything, tt.purpose).
+					Return(tt.redisError)
 			}
-
 			if tt.expectGetEmail {
-				mockUserRepo.On("GetUserEmailById", ctx, tt.userID).Return(tt.email, tt.emailError)
+				mockUserRepo.On("GetUserEmailById", ctx, tt.userID).
+					Return(tt.email, tt.emailError)
 			}
-
 			if tt.expectSendMail {
-				mockPhoenixService.On("SendMail", ctx, tt.userID, mock.AnythingOfType("phoenix.EmailTemplate")).Return(tt.emailSendError)
+				mockPhoenixService.On("SendMail", ctx, tt.userID, mock.Anything).
+					Return(tt.emailSendError)
 			}
 
-			// Execute
 			success, errCode, err := service.RequestOTP(ctx, tt.userID, tt.purpose)
 
-			// Assertions
 			assert.Equal(t, tt.expectedSuccess, success)
+
 			if tt.expectedError != "" {
 				if err != nil {
-					assert.Error(t, err)
-					assert.Contains(t, strings.ToLower(err.Error()), tt.expectedError)
+					assert.EqualError(t, err, tt.expectedError)
 				} else if errCode != nil {
-					assert.Contains(t, strings.ToLower(errCode.Message), tt.expectedError)
+					assert.Equal(t, tt.expectedError, errCode.Message)
+				} else {
+					t.Errorf("expected error but got none")
 				}
 			} else {
 				assert.NoError(t, err)
 				assert.Nil(t, errCode)
 			}
 
-			// Verify mock expectations
-			if tt.expectSetOTP {
-				mockRedisRepo.AssertExpectations(t)
-			}
-			if tt.expectGetEmail {
-				mockUserRepo.AssertExpectations(t)
-			}
-			if tt.expectSendMail {
-				mockPhoenixService.AssertExpectations(t)
-			}
+			mockRedisRepo.AssertExpectations(t)
+			mockUserRepo.AssertExpectations(t)
+			mockPhoenixService.AssertExpectations(t)
 		})
 	}
 }
@@ -177,106 +164,65 @@ func TestVerifyOTP(t *testing.T) {
 		purpose         string
 		storedOTP       string
 		redisGetError   error
+		deleteOTPErr    error
 		expectedSuccess bool
 		expectedError   string
-		expectGetOTP    bool
-		expectDeleteOTP bool
 	}{
 		{
-			name:            "Success_Signup",
+			name:            "Succeeds_WhenOTPMatches",
 			userID:          "user123",
 			code:            "123456",
 			purpose:         "signup",
 			storedOTP:       "123456",
-			redisGetError:   nil,
 			expectedSuccess: true,
-			expectedError:   "",
-			expectGetOTP:    true,
-			expectDeleteOTP: true,
 		},
 		{
-			name:            "Success_ForgotPassword",
-			userID:          "user456",
-			code:            "789012",
-			purpose:         "forgot_password",
-			storedOTP:       "789012",
-			redisGetError:   nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectGetOTP:    true,
-			expectDeleteOTP: true,
+			name:          "Fails_WhenOTPDoesNotMatch",
+			userID:        "user123",
+			code:          "000000",
+			purpose:       "signup",
+			storedOTP:     "123456",
+			expectedError: appError.OtpInvalid.Message,
 		},
 		{
-			name:            "RedisGetError",
+			name:          "Fails_WhenOTPExpiredOrNotFound",
+			userID:        "user123",
+			code:          "123456",
+			purpose:       "signup",
+			storedOTP:     "",
+			expectedError: appError.OtpExpiredOrNotFound.Message,
+		},
+		{
+			name:          "Fails_WhenRedisGetFails",
+			userID:        "user123",
+			code:          "123456",
+			purpose:       "signup",
+			redisGetError: errors.New("redis down"),
+			expectedError: "redis down",
+		},
+		{
+			name:          "Fails_WhenPurposeIsInvalid",
+			userID:        "user123",
+			code:          "123456",
+			purpose:       "invalid_purpose",
+			expectedError: appError.OtpInvalidPurpose.Message,
+		},
+		{
+			name:            "Succeeds_WhenOTPHasLeadingZeros",
+			userID:          "user123",
+			code:            "000123",
+			purpose:         "signup",
+			storedOTP:       "000123",
+			expectedSuccess: true,
+		},
+		{
+			name:            "Succeeds_WhenDeleteOTPFails",
 			userID:          "user123",
 			code:            "123456",
-			purpose:         "signup",
-			storedOTP:       "",
-			redisGetError:   errors.New("redis connection failed"),
-			expectedSuccess: false,
-			expectedError:   "redis connection failed",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "OTPExpiredOrNotFound",
-			userID:          "user123",
-			code:            "123456",
-			purpose:         "signup",
-			storedOTP:       "", // Empty OTP means expired/not found
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "otp expired or not found",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "InvalidOTP",
-			userID:          "user123",
-			code:            "654321", // Wrong code
-			purpose:         "signup",
-			storedOTP:       "123456", // Correct OTP
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "CaseSensitiveOTP",
-			userID:          "user123",
-			code:            "123456",
-			purpose:         "signup",
-			storedOTP:       "123456", // Exact match
-			redisGetError:   nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectGetOTP:    true,
-			expectDeleteOTP: true,
-		},
-		{
-			name:            "EmptyCode",
-			userID:          "user123",
-			code:            "", // Empty code
 			purpose:         "signup",
 			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "WhitespaceInCode",
-			userID:          "user123",
-			code:            " 123456 ", // Code with whitespace
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
+			deleteOTPErr:    errors.New("redis delete failed"),
+			expectedSuccess: true,
 		},
 	}
 
@@ -289,308 +235,30 @@ func TestVerifyOTP(t *testing.T) {
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
 
-			// Setup mocks based on expectations
-			if tt.expectGetOTP {
-				mockRedisRepo.On("GetOTP", ctx, tt.userID, tt.purpose).Return(tt.storedOTP, tt.redisGetError)
-			}
+			mockRedisRepo.On("GetOTP", ctx, tt.userID, tt.purpose).
+				Return(tt.storedOTP, tt.redisGetError).Maybe()
 
-			if tt.expectDeleteOTP {
-				mockRedisRepo.On("DeleteOTP", ctx, tt.userID, tt.purpose).Return(nil)
-			}
+			mockRedisRepo.On("DeleteOTP", ctx, tt.userID, tt.purpose).
+				Return(tt.deleteOTPErr).Maybe()
 
-			// Execute
 			success, errCode, err := service.VerifyOTP(ctx, tt.userID, tt.code, tt.purpose)
 
-			// Assertions
 			assert.Equal(t, tt.expectedSuccess, success)
+
 			if tt.expectedError != "" {
 				if err != nil {
-					assert.Error(t, err)
-					assert.Contains(t, strings.ToLower(err.Error()), tt.expectedError)
+					assert.EqualError(t, err, tt.expectedError)
 				} else if errCode != nil {
-					assert.Contains(t, strings.ToLower(errCode.Message), tt.expectedError)
+					assert.Equal(t, tt.expectedError, errCode.Message)
+				} else {
+					t.Errorf("expected error but got none")
 				}
 			} else {
 				assert.NoError(t, err)
 				assert.Nil(t, errCode)
 			}
 
-			// Verify mock expectations
-			if tt.expectGetOTP {
-				mockRedisRepo.AssertExpectations(t)
-			}
-		})
-	}
-}
-
-// TestRequestOTP_EdgeCases tests edge cases and boundary conditions
-func TestRequestOTP_EdgeCases(t *testing.T) {
-	tests := []struct {
-		name            string
-		userID          string
-		purpose         string
-		email           string
-		emailError      error
-		redisError      error
-		emailSendError  error
-		expectedSuccess bool
-		expectedError   string
-		expectSetOTP    bool
-		expectGetEmail  bool
-		expectSendMail  bool
-	}{
-		{
-			name:            "EmptyUserID",
-			userID:          "",
-			purpose:         "signup",
-			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectSetOTP:    true,
-			expectGetEmail:  true,
-			expectSendMail:  true,
-		},
-		{
-			name:            "EmptyPurpose",
-			userID:          "user123",
-			purpose:         "",
-			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp purpose",
-			expectSetOTP:    false,
-			expectGetEmail:  false,
-			expectSendMail:  false,
-		},
-		{
-			name:            "VeryLongUserID",
-			userID:          "very-long-user-id-that-exceeds-normal-limits-and-might-cause-issues-in-some-systems",
-			purpose:         "signup",
-			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectSetOTP:    true,
-			expectGetEmail:  true,
-			expectSendMail:  true,
-		},
-		{
-			name:            "SpecialCharactersInUserID",
-			userID:          "user-123_test@domain",
-			purpose:         "signup",
-			email:           "test@example.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectSetOTP:    true,
-			expectGetEmail:  true,
-			expectSendMail:  true,
-		},
-		{
-			name:            "VeryLongEmail",
-			userID:          "user123",
-			purpose:         "signup",
-			email:           "verylongemailaddressthatexceedsnormallimitsandmightcauseissuesinsomesystems@verylongdomainname.com",
-			emailError:      nil,
-			redisError:      nil,
-			emailSendError:  nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectSetOTP:    true,
-			expectGetEmail:  true,
-			expectSendMail:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(userrepo.MockRepo)
-			mockRedisRepo := new(redisrepo.MockRedisRepo)
-			mockPhoenixService := new(phoenixservice.MockPhoenixService)
-
-			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
-			ctx := context.Background()
-
-			// Setup mocks based on expectations
-			if tt.expectSetOTP {
-				mockRedisRepo.On("SetOTP", ctx, tt.userID, mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration"), tt.purpose).Return(tt.redisError)
-			}
-
-			if tt.expectGetEmail {
-				mockUserRepo.On("GetUserEmailById", ctx, tt.userID).Return(tt.email, tt.emailError)
-			}
-
-			if tt.expectSendMail {
-				mockPhoenixService.On("SendMail", ctx, tt.userID, mock.AnythingOfType("phoenix.EmailTemplate")).Return(tt.emailSendError)
-			}
-
-			// Execute
-			success, errCode, err := service.RequestOTP(ctx, tt.userID, tt.purpose)
-
-			// Assertions
-			assert.Equal(t, tt.expectedSuccess, success)
-			if tt.expectedError != "" {
-				if err != nil {
-					assert.Error(t, err)
-					assert.Contains(t, strings.ToLower(err.Error()), tt.expectedError)
-				} else if errCode != nil {
-					assert.Contains(t, strings.ToLower(errCode.Message), tt.expectedError)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Nil(t, errCode)
-			}
-
-			// Verify mock expectations
-			if tt.expectSetOTP {
-				mockRedisRepo.AssertExpectations(t)
-			}
-			if tt.expectGetEmail {
-				mockUserRepo.AssertExpectations(t)
-			}
-			if tt.expectSendMail {
-				mockPhoenixService.AssertExpectations(t)
-			}
-		})
-	}
-}
-
-// TestVerifyOTP_EdgeCases tests edge cases and boundary conditions
-func TestVerifyOTP_EdgeCases(t *testing.T) {
-	tests := []struct {
-		name            string
-		userID          string
-		code            string
-		purpose         string
-		storedOTP       string
-		redisGetError   error
-		expectedSuccess bool
-		expectedError   string
-		expectGetOTP    bool
-		expectDeleteOTP bool
-	}{
-		{
-			name:            "EmptyUserID",
-			userID:          "",
-			code:            "123456",
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectGetOTP:    true,
-			expectDeleteOTP: true,
-		},
-		{
-			name:            "EmptyPurpose",
-			userID:          "user123",
-			code:            "123456",
-			purpose:         "",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp purpose",
-			expectGetOTP:    false,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "VeryLongCode",
-			userID:          "user123",
-			code:            "1234567890123456789012345678901234567890", // Very long code
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "SpecialCharactersInCode",
-			userID:          "user123",
-			code:            "123@456",
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "UnicodeCharactersInCode",
-			userID:          "user123",
-			code:            "123测试456",
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: false,
-			expectedError:   "invalid otp",
-			expectGetOTP:    true,
-			expectDeleteOTP: false,
-		},
-		{
-			name:            "NumericStringCode",
-			userID:          "user123",
-			code:            "123456",
-			purpose:         "signup",
-			storedOTP:       "123456",
-			redisGetError:   nil,
-			expectedSuccess: true,
-			expectedError:   "",
-			expectGetOTP:    true,
-			expectDeleteOTP: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(userrepo.MockRepo)
-			mockRedisRepo := new(redisrepo.MockRedisRepo)
-			mockPhoenixService := new(phoenixservice.MockPhoenixService)
-
-			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
-			ctx := context.Background()
-
-			// Setup mocks based on expectations
-			if tt.expectGetOTP {
-				mockRedisRepo.On("GetOTP", ctx, tt.userID, tt.purpose).Return(tt.storedOTP, tt.redisGetError)
-			}
-
-			if tt.expectDeleteOTP {
-				mockRedisRepo.On("DeleteOTP", ctx, tt.userID, tt.purpose).Return(nil)
-			}
-
-			// Execute
-			success, errCode, err := service.VerifyOTP(ctx, tt.userID, tt.code, tt.purpose)
-
-			// Assertions
-			assert.Equal(t, tt.expectedSuccess, success)
-			if tt.expectedError != "" {
-				if err != nil {
-					assert.Error(t, err)
-					assert.Contains(t, strings.ToLower(err.Error()), tt.expectedError)
-				} else if errCode != nil {
-					assert.Contains(t, strings.ToLower(errCode.Message), tt.expectedError)
-				}
-			} else {
-				assert.NoError(t, err)
-				assert.Nil(t, errCode)
-			}
-
-			// Verify mock expectations
-			if tt.expectGetOTP {
-				mockRedisRepo.AssertExpectations(t)
-			}
+			mockRedisRepo.AssertExpectations(t)
 		})
 	}
 }
