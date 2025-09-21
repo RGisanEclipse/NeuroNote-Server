@@ -8,15 +8,26 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
-	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
-	otpErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/otp"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
 )
+
+// setRefreshTokenCookie sets a refresh token cookie with secure settings
+func setRefreshTokenCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    token,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+		MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+	})
+}
 
 func RegisterAuthRoutes(router *mux.Router, svc authservice.S) {
 	router.HandleFunc("/api/v1/auth/signup", signupHandler(svc)).Methods("POST")
@@ -35,45 +46,39 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err)
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.Response{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody)
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 		if err := req.Validate(); err != nil {
-			logger.Warn(server.Error.BadRequest, err, logrus.Fields{
-				"email":     req.Email,
-				"requestId": reqID,
-			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.Response{
-				Success: false,
-				Message: err.Error(),
-			})
-			return
-		}
-
-		res, err := svc.Signup(ctx, req.Email, req.Password)
-		if err != nil {
-			logger.Warn("Signup failed", err, logrus.Fields{
-				"email":     req.Email,
-				"requestId": reqID,
-			})
-
-			var statusCode int
-			if err.Error() == authErr.Error.EmailExists {
-				statusCode = http.StatusBadRequest
+			// Cast the error to *appError.Code since Validate() returns specific error codes
+			if errCode, ok := err.(*appError.Code); ok {
+				logger.Warn(errCode.Message, nil, errCode, logger.Fields{
+					"email":     req.Email,
+					"requestId": reqID,
+				})
+				response.WriteError(w, errCode)
 			} else {
-				statusCode = http.StatusInternalServerError
+				logger.Warn(appError.ServerBadRequest.Message, err, appError.ServerBadRequest, logger.Fields{
+					"email":     req.Email,
+					"requestId": reqID,
+				})
+				response.WriteError(w, appError.ServerBadRequest)
 			}
-
-			response.WriteJSON(w, statusCode, authmodel.Response{
-				Success: false,
-				Message: err.Error(),
-			})
 			return
 		}
+
+		res, errCode := svc.Signup(ctx, req.Email, req.Password)
+		if errCode != nil {
+			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
+				"email":     req.Email,
+				"requestId": reqID,
+			})
+
+			response.WriteError(w, errCode)
+			return
+		}
+
 		logger.Info("Response from signup handler", logrus.Fields{
 			"email":      req.Email,
 			"requestId":  reqID,
@@ -82,22 +87,12 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 			"isVerified": res.IsVerified,
 		})
 
-		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
-			Value:    res.RefreshToken,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-			Path:     "/",
-			MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
-		})
+		setRefreshTokenCookie(w, res.RefreshToken)
 
-		response.WriteJSON(w, http.StatusOK, authmodel.Response{
-			Success:     res.Success,
-			Message:     res.Message,
-			AccessToken: res.AccessToken,
-			IsVerified:  res.IsVerified,
-		})
+		response.WriteSuccess(w, map[string]interface{}{
+			"token":      res.AccessToken,
+			"isVerified": res.IsVerified,
+		}, res.Message)
 	}
 }
 
@@ -107,51 +102,35 @@ func signinHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err)
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.Response{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody)
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.Signin(ctx, req.Email, req.Password)
-		if err != nil {
-			logger.Warn("Signin failed", err, logrus.Fields{
+		res, errCode := svc.Signin(ctx, req.Email, req.Password)
+		if errCode != nil {
+			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
 				"email":     req.Email,
 				"requestId": reqID,
 			})
 
-			var statusCode int
-			if err.Error() == authErr.Error.IncorrectPassword || err.Error() == authErr.Error.EmailDoesntExist {
-				statusCode = http.StatusUnauthorized
-			} else {
-				statusCode = http.StatusInternalServerError
-			}
-
-			response.WriteJSON(w, statusCode, authmodel.Response{
-				Success: false,
-				Message: err.Error(),
-			})
+			response.WriteError(w, errCode)
 			return
 		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
-			Value:    res.RefreshToken,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-			Path:     "/",
-			MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+		logger.Info("Response from signin handler", logrus.Fields{
+			"email":      req.Email,
+			"requestId":  reqID,
+			"success":    res.Success,
+			"message":    res.Message,
+			"isVerified": res.IsVerified,
 		})
 
-		response.WriteJSON(w, http.StatusOK, authmodel.Response{
-			Success:     res.Success,
-			Message:     res.Message,
-			AccessToken: res.AccessToken,
-			IsVerified:  res.IsVerified,
-		})
+		setRefreshTokenCookie(w, res.RefreshToken)
+
+		response.WriteSuccess(w, map[string]interface{}{
+			"token":      res.AccessToken,
+			"isVerified": res.IsVerified,
+		}, res.Message)
 	}
 }
 
@@ -161,57 +140,37 @@ func refreshTokenHandler(svc authservice.S) http.HandlerFunc {
 		reqID := request.FromContext(ctx)
 		var req authmodel.RefreshTokenRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.RefreshTokenResponse{
-				AccessToken: "",
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		if req.RefreshToken == "" {
-			logger.Warn("Empty refresh token in request", nil, logrus.Fields{
+			logger.Warn(appError.ServerBadRequest.Message, nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.RefreshTokenResponse{
-				AccessToken: "",
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.RefreshToken(ctx, req.RefreshToken)
-		if err != nil {
-			logger.Warn("Refresh token failed", err, logrus.Fields{
-				"refreshToken": req.RefreshToken,
-				"requestId":    reqID,
+		res, errCode := svc.RefreshToken(ctx, req.RefreshToken)
+		if errCode != nil {
+			logger.Warn("Refresh token failed", nil, errCode, logrus.Fields{
+				"requestId": reqID,
 			})
-
-			var statusCode int
-			if err.Error() == authErr.Error.InvalidRefreshToken || err.Error() == authErr.Error.RefreshTokenMismatch {
-				statusCode = http.StatusUnauthorized
-			} else {
-				statusCode = http.StatusInternalServerError
-			}
-
-			response.WriteJSON(w, statusCode, authmodel.RefreshTokenResponse{
-				AccessToken: "",
-			})
+			response.WriteError(w, errCode)
 			return
 		}
-
-		http.SetCookie(w, &http.Cookie{
-			Name:     "refreshToken",
-			Value:    res.RefreshToken,
-			HttpOnly: true,
-			Secure:   true,
-			SameSite: http.SameSiteStrictMode,
-			Path:     "/",
-			MaxAge:   int(authservice.RefreshTokenExpiry.Seconds()),
+		logger.Info("Response from refresh token handler", logrus.Fields{
+			"requestId": reqID,
 		})
 
-		response.WriteJSON(w, http.StatusOK, authmodel.RefreshTokenResponse{
-			AccessToken: res.AccessToken,
+		setRefreshTokenCookie(w, res.RefreshToken)
+
+		response.WriteSuccess(w, map[string]interface{}{
+			"accessToken": res.AccessToken,
 		})
 	}
 }
@@ -224,41 +183,38 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 		var req authmodel.SignupOTPRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		if req.UserId == "" {
-			logger.Warn("Empty userId in OTP request", nil, logrus.Fields{
+			logger.Warn("Empty userId in OTP request", nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.SignupOTP(ctx, req.UserId)
-		if err != nil {
-			logger.Warn("Signup OTP Failed", err, logrus.Fields{
+		res, errCode := svc.SignupOTP(ctx, req.UserId)
+		if errCode != nil {
+			logger.Warn("Signup OTP failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.InternalError,
-			})
+			response.WriteError(w, errCode)
 			return
 		}
+		logger.Info("Response from signup OTP handler", logrus.Fields{
+			"userId":    req.UserId,
+			"requestId": reqID,
+			"success":   res.Success,
+			"message":   res.Message,
+		})
 
-		response.WriteJSON(w, http.StatusOK, res)
+		response.WriteSuccess(w, res)
 	}
 }
 
@@ -269,57 +225,38 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.OTPVerifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		if req.UserId == "" || req.Code == "" {
-			logger.Warn("Empty userId or code in OTP verify request", nil, logrus.Fields{
+			logger.Warn("Empty userId or code in OTP verify request", nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.SignupOTPVerify(ctx, req.UserId, req.Code)
-		if err != nil {
-			logger.Warn("Signup OTP Verification Failed", err, logrus.Fields{
+		res, errCode := svc.SignupOTPVerify(ctx, req.UserId, req.Code)
+		if errCode != nil {
+			logger.Warn("Signup OTP verify failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
 				"requestId": reqID,
 			})
-
-			var statusCode int
-			var message string
-
-			switch err.Error() {
-			case otpErr.Error.InvalidOTP:
-				statusCode = http.StatusBadRequest
-				message = otpErr.Error.InvalidOTP
-			case otpErr.Error.OTPExpiredOrNotFound:
-				statusCode = http.StatusBadRequest
-				message = otpErr.Error.OTPExpiredOrNotFound
-			default:
-				statusCode = http.StatusInternalServerError
-				message = server.Error.InternalError
-			}
-
-			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
-				Success: false,
-				Message: message,
-			})
+			response.WriteError(w, errCode)
 			return
 		}
+		logger.Info("Response from signup OTP verify handler", logrus.Fields{
+			"userId":    req.UserId,
+			"requestId": reqID,
+			"success":   res.Success,
+			"message":   res.Message,
+		})
 
-		response.WriteJSON(w, http.StatusOK, res)
+		response.WriteSuccess(w, res)
 	}
 }
 
@@ -331,41 +268,38 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 		var req authmodel.ForgotPasswordOTPRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		if req.Email == "" {
-			logger.Warn("Empty email in OTP request", nil, logrus.Fields{
+			logger.Warn("Empty email in OTP request", nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.ForgotPasswordOTP(ctx, req.Email)
-		if err != nil {
-			logger.Warn("OTP Request Failed", err, logrus.Fields{
+		res, errCode := svc.ForgotPasswordOTP(ctx, req.Email)
+		if errCode != nil {
+			logger.Warn("OTP Request Failed", nil, errCode, logrus.Fields{
 				"email":     req.Email,
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusInternalServerError, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.InternalError,
-			})
+			response.WriteError(w, errCode)
 			return
 		}
+		logger.Info("Response from forgot password OTP handler", logrus.Fields{
+			"email":     req.Email,
+			"requestId": reqID,
+			"success":   res.Success,
+			"message":   res.Message,
+		})
 
-		response.WriteJSON(w, http.StatusOK, res)
+		response.WriteSuccess(w, res)
 	}
 }
 
@@ -376,57 +310,38 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.OTPVerifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		if req.UserId == "" || req.Code == "" {
-			logger.Warn("Empty userId or code in OTP verify request", nil, logrus.Fields{
+			logger.Warn("Empty userId or code in OTP verify request", nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.OTPResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.ForgotPasswordOTPVerify(ctx, req.UserId, req.Code)
-		if err != nil {
-			logger.Warn("Forgot Password OTP Verification Failed", err, logrus.Fields{
+		res, errCode := svc.ForgotPasswordOTPVerify(ctx, req.UserId, req.Code)
+		if errCode != nil {
+			logger.Warn("Forgot password OTP verify failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
 				"requestId": reqID,
 			})
-
-			var statusCode int
-			var message string
-
-			switch err.Error() {
-			case otpErr.Error.InvalidOTP:
-				statusCode = http.StatusBadRequest
-				message = otpErr.Error.InvalidOTP
-			case otpErr.Error.OTPExpiredOrNotFound:
-				statusCode = http.StatusBadRequest
-				message = otpErr.Error.OTPExpiredOrNotFound
-			default:
-				statusCode = http.StatusInternalServerError
-				message = server.Error.InternalError
-			}
-
-			response.WriteJSON(w, statusCode, authmodel.OTPResponse{
-				Success: false,
-				Message: message,
-			})
+			response.WriteError(w, errCode)
 			return
 		}
+		logger.Info("Response from forgot password OTP verify handler", logrus.Fields{
+			"userId":    req.UserId,
+			"requestId": reqID,
+			"success":   res.Success,
+			"message":   res.Message,
+		})
 
-		response.WriteJSON(w, http.StatusOK, res)
+		response.WriteSuccess(w, res)
 	}
 }
 
@@ -437,41 +352,40 @@ func passwordResetHandler(svc authservice.S) http.HandlerFunc {
 
 		var req authmodel.ResetPasswordRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Warn(server.Error.InvalidBody, err, logrus.Fields{
+			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.ResetPasswordResponse{
-				Success: false,
-				Message: server.Error.BadRequest,
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
 		req.UserId = strings.TrimSpace(req.UserId)
 
 		if req.UserId == "" || len(req.UserId) != 14 {
-			logger.Warn("Invalid userId in password reset request", nil, logrus.Fields{
+			logger.Warn("Invalid userId in password reset request", nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 				"userId":    req.UserId,
 			})
-			response.WriteJSON(w, http.StatusBadRequest, authmodel.ResetPasswordResponse{
-				Success: false,
-				Message: "Invalid userId",
-			})
+			response.WriteError(w, appError.ServerBadRequest)
 			return
 		}
 
-		res, err := svc.ResetPassword(ctx, req.UserId, req.Password)
-		if err != nil {
-			logger.Error("Password reset failed", err, logrus.Fields{
-				"requestId": reqID,
+		res, errCode := svc.ResetPassword(ctx, req.UserId, req.Password)
+		if errCode != nil {
+			logger.Warn("Password reset failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
+				"requestId": reqID,
 			})
-
-			response.WriteJSON(w, http.StatusInternalServerError, res)
+			response.WriteError(w, errCode)
 			return
 		}
+		logger.Info("Response from password reset handler", logrus.Fields{
+			"userId":    req.UserId,
+			"requestId": reqID,
+			"success":   res.Success,
+			"message":   res.Message,
+		})
 
-		response.WriteJSON(w, http.StatusOK, res)
+		response.WriteSuccess(w, res)
 	}
 }

@@ -1,11 +1,10 @@
 package auth
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 
-	authErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/auth"
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 )
 
 var (
@@ -33,11 +32,11 @@ func (a *Request) Validate() error {
 func ValidateEmail(email string) error {
 
 	if strings.TrimSpace(email) == "" {
-		return errors.New(authErr.Error.EmailRequired)
+		return appError.EmailRequired
 	}
 
 	if !emailRegex.MatchString(email) {
-		return errors.New(authErr.Error.InvalidEmail)
+		return appError.EmailInvalid
 	}
 
 	return nil
@@ -46,35 +45,35 @@ func ValidateEmail(email string) error {
 func ValidatePassword(password string) error {
 
 	if strings.TrimSpace(password) == "" {
-		return errors.New(authErr.Error.PasswordRequired)
+		return appError.PasswordRequired
 	}
 
 	if len(password) < 8 {
-		return errors.New(authErr.Error.PasswordTooShort)
+		return appError.PasswordTooShort
 	}
 
 	if len(password) > 32 {
-		return errors.New(authErr.Error.PasswordTooLong)
+		return appError.PasswordTooLong
 	}
 
 	if !uppercaseRegex.MatchString(password) {
-		return errors.New(authErr.Error.PasswordMissingUppercase)
+		return appError.PasswordMissingUppercase
 	}
 
 	if !lowercaseRegex.MatchString(password) {
-		return errors.New(authErr.Error.PasswordMissingLowercase)
+		return appError.PasswordMissingLowercase
 	}
 
 	if !digitRegex.MatchString(password) {
-		return errors.New(authErr.Error.PasswordMissingDigit)
+		return appError.PasswordMissingDigit
 	}
 
 	if !specialCharRegex.MatchString(password) {
-		return errors.New(authErr.Error.PasswordMissingSpecialCharacter)
+		return appError.PasswordMissingSpecialChar
 	}
 
 	if whitespaceRegex.MatchString(password) {
-		return errors.New(authErr.Error.PasswordContainsWhitespace)
+		return appError.PasswordContainsWhitespace
 	}
 
 	return nil

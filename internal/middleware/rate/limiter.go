@@ -9,10 +9,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models"
 )
 
 const rateLimitWindow = time.Minute
@@ -40,7 +39,7 @@ func Limit(next http.Handler) http.Handler {
 
 		count, err := redis.Client.Incr(r.Context(), key).Result()
 		if err != nil {
-			logger.Error("RateLimit Redis INCR failed", err, nil)
+			logger.Error("RateLimit Redis INCR failed", err, appError.ServerInternalError)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -48,23 +47,25 @@ func Limit(next http.Handler) http.Handler {
 		if count == 1 {
 			_, err := redis.Client.Expire(r.Context(), key, rateLimitWindow).Result()
 			if err != nil {
-				logger.Error(server.Error.TooManyRequests, err, nil)
+				logger.Error("RateLimit Redis EXPIRE failed", err, appError.ServerInternalError)
 			}
 		}
 
 		if count > int64(limit) {
 			logger.Warn(
-				server.Error.TooManyRequests,
-				errors.New(server.Error.TooManyRequests),
+				"Rate limit exceeded",
+				errors.New("too many requests"),
+				appError.ServerTooManyRequests,
 				logrus.Fields{"ip": ip, "route": route, "key": key},
 			)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)
-			_ = json.NewEncoder(w).Encode(models.RateLimitResponse{
-				Success: false,
-				Message: server.Error.TooManyRequests,
-			})
+			_ = json.NewEncoder(w).Encode(appError.NewErrorResponse(
+				appError.ServerTooManyRequests.Code,
+				appError.ServerTooManyRequests.Message,
+				appError.ServerTooManyRequests.Status,
+			))
 			return
 		}
 

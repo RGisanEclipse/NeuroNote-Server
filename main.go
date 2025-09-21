@@ -13,8 +13,7 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/error/server"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/auth"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"
@@ -26,20 +25,20 @@ import (
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-		logger.Error(server.Error.MissingEnvVars, err)
+		logger.Error(error.ServerMissingEnvVars.Message, err, error.ServerMissingEnvVars)
 		os.Exit(1)
 	}
 
 	// Database Initialization
 	if err := db.Init(); err != nil {
-		logger.Error(dbErr.Error.ConnectionFailed, err)
+		logger.Error(error.DBConnectionFailed.Message, err, error.DBConnectionFailed)
 		os.Exit(1)
 	}
 
 	// Redis Initialization
 	redis.InitRedis()
 	if err := redis.Client.Ping(context.Background()).Err(); err != nil {
-		logger.Error(dbErr.Redis.ConnectionFailed, err)
+		logger.Error(error.RedisConnectionFailed.Message, err, error.RedisConnectionFailed)
 		os.Exit(1)
 	}
 	// Construct Services
@@ -91,13 +90,13 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Error(server.Error.ShutdownFailed, err)
+			logger.Error(error.ServerShutdownFailed.Message, err, error.ServerShutdownFailed)
 		}
 		close(idleConnsClosed)
 	}()
 
 	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && err != http.ErrServerClosed {
-		logger.Error(server.Error.HTTPServerError, err)
+		logger.Error(error.ServerInternalError.Message, err, error.ServerInternalError)
 	}
 
 	<-idleConnsClosed

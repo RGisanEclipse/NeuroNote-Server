@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	dbErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/db"
-	phoenixErr "github.com/RGisanEclipse/NeuroNote-Server/internal/error/phoenix"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
 	"github.com/sirupsen/logrus"
@@ -29,11 +28,11 @@ func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.
 	requestId := request.FromContext(ctx)
 	email, err := s.userrepo.GetUserEmailById(ctx, userId)
 	if err != nil {
-		logger.Error(dbErr.Error.EmailQueryFailed, err, logger.Fields{
+		logger.Error("Failed to get user email", err, appError.DBEmailQueryFailed, logger.Fields{
 			"userId":    userId,
 			"requestId": requestId,
 		})
-		return errors.New(dbErr.Error.EmailQueryFailed)
+		return appError.DBEmailQueryFailed
 	}
 
 	response, err := s.client.SendEmail(
@@ -52,20 +51,20 @@ func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.
 		},
 	)
 	if err != nil {
-		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, err, logrus.Fields{
+		logger.Error("Failed to send email", err, appError.PhoenixEmailDeliveryFailed, logrus.Fields{
 			"userId":       userId,
 			"requestId":    requestId,
 			"errorMessage": err.Error(),
 		})
-		return errors.New(phoenixErr.ErrorMessages.EmailDeliveryFailed)
+		return appError.PhoenixEmailDeliveryFailed
 	}
 	if !response.Success {
-		logger.Error(phoenixErr.ErrorMessages.EmailDeliveryFailed, nil, logrus.Fields{
+		logger.Error("Email delivery failed", errors.New(response.Error), appError.PhoenixEmailDeliveryFailed, logrus.Fields{
 			"userId":       userId,
 			"requestId":    requestId,
-			"errorMessage": response.Message,
+			"errorMessage": response.Error,
 		})
-		return errors.New(phoenixErr.ErrorMessages.EmailDeliveryFailed)
+		return appError.PhoenixEmailDeliveryFailed
 	}
 
 	logger.Info("Email sent successfully", logrus.Fields{
