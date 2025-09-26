@@ -1,4 +1,4 @@
-package phoenix
+package mocks
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockPhoenixService is a mock implementation of the PhoenixService interface
 type MockPhoenixService struct {
 	mock.Mock
 }

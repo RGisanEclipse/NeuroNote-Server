@@ -10,7 +10,7 @@ import (
 )
 
 type Services struct {
-	Auth auth.S
+	Auth *auth.Service
 }
 
 func New() *Services {
@@ -24,7 +24,7 @@ func New() *Services {
 	phoenixService := phoenixservice.New(userrepo, phoenixClient)
 
 	otpService := otpservice.New(userrepo, redisRepo, phoenixService)
-	authService := auth.New(userrepo, redisRepo, otpService)
+	authService := auth.NewService(userrepo, redisRepo, otpService)
 
 	return &Services{
 		Auth: authService,

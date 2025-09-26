@@ -54,10 +54,12 @@ go.work
 **/Dockerfile.local
 **/docker-compose.*
 
-localhost.pem
-localhost-key.pem
+certs
+
 *.crt
 *.key
 
 loki-config.yaml
+loki-data
+logs
 

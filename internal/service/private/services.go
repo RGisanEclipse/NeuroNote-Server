@@ -10,7 +10,7 @@ import (
 
 type Services struct {
 	OTP     otp.S
-	Phoenix phoenixservice.PhoenixService
+	Phoenix phoenixservice.Service
 }
 
 func New() *Services {
