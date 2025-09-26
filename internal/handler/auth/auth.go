@@ -30,18 +30,31 @@ func setRefreshTokenCookie(w http.ResponseWriter, token string) {
 	})
 }
 
-func RegisterAuthRoutes(router *mux.Router, svc authservice.S) {
+func RegisterAuthRoutes(router *mux.Router, svc *authservice.Service) {
+	// Auth flows
+	registerSignupRoutes(router, svc.Signup)
+	registerSigninRoutes(router, svc.Signin)
+	registerForgotPasswordRoutes(router, svc.ForgotPassword)
+}
+
+func registerSignupRoutes(router *mux.Router, svc authservice.SignupService) {
 	router.HandleFunc("/api/v1/auth/signup", signupHandler(svc)).Methods("POST")
-	router.HandleFunc("/api/v1/auth/signin", signinHandler(svc)).Methods("POST")
 	router.HandleFunc("/api/v1/auth/signup/otp", signupOTPHandler(svc)).Methods("POST")
 	router.HandleFunc("/api/v1/auth/signup/otp/verify", signupOTPVerifyHandler(svc)).Methods("POST")
+}
+
+func registerSigninRoutes(router *mux.Router, svc authservice.SigninService) {
+	router.HandleFunc("/api/v1/auth/signin", signinHandler(svc)).Methods("POST")
 	router.HandleFunc("/api/v1/auth/token/refresh", refreshTokenHandler(svc)).Methods("POST")
+}
+
+func registerForgotPasswordRoutes(router *mux.Router, svc authservice.ForgotPasswordService) {
 	router.HandleFunc("/api/v1/auth/password/otp", forgotPasswordOTPHandler(svc)).Methods("POST")
 	router.HandleFunc("/api/v1/auth/password/otp/verify", forgotPasswordOTPVerifyHandler(svc)).Methods("POST")
 	router.HandleFunc("/api/v1/auth/password/reset", passwordResetHandler(svc)).Methods("POST")
 }
 
-func signupHandler(svc authservice.S) http.HandlerFunc {
+func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -53,18 +66,13 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 		}
 		if err := req.Validate(); err != nil {
 			// Cast the error to *appError.Code since Validate() returns specific error codes
-			if errCode, ok := err.(*appError.Code); ok {
+			var errCode *appError.Code
+			if errors.As(err, &errCode) {
 				logger.Warn(errCode.Message, nil, errCode, logger.Fields{
 					"email":     req.Email,
 					"requestId": reqID,
 				})
 				response.WriteError(w, errCode)
-			} else {
-				logger.Warn(appError.ServerBadRequest.Message, err, appError.ServerBadRequest, logger.Fields{
-					"email":     req.Email,
-					"requestId": reqID,
-				})
-				response.WriteError(w, appError.ServerBadRequest)
 			}
 			return
 		}
@@ -97,7 +105,7 @@ func signupHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func signinHandler(svc authservice.S) http.HandlerFunc {
+func signinHandler(svc authservice.SigninService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -147,7 +155,7 @@ func signinHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func refreshTokenHandler(svc authservice.S) http.HandlerFunc {
+func refreshTokenHandler(svc authservice.SigninService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -188,7 +196,7 @@ func refreshTokenHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func signupOTPHandler(svc authservice.S) http.HandlerFunc {
+func signupOTPHandler(svc authservice.SignupService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -231,7 +239,7 @@ func signupOTPHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
+func signupOTPVerifyHandler(svc authservice.SignupService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -273,7 +281,7 @@ func signupOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
+func forgotPasswordOTPHandler(svc authservice.ForgotPasswordService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -316,7 +324,7 @@ func forgotPasswordOTPHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
+func forgotPasswordOTPVerifyHandler(svc authservice.ForgotPasswordService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
@@ -358,7 +366,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.S) http.HandlerFunc {
 	}
 }
 
-func passwordResetHandler(svc authservice.S) http.HandlerFunc {
+func passwordResetHandler(svc authservice.ForgotPasswordService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)

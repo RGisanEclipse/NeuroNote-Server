@@ -6,27 +6,14 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
 	"github.com/sirupsen/logrus"
 )
 
-type Service struct {
-	userrepo user.Repository
-	client   *BrevoClient
-}
-
-func New(userrepo user.Repository, client *BrevoClient) *Service {
-	return &Service{
-		userrepo: userrepo,
-		client:   client,
-	}
-}
-
-func (s *Service) SendMail(ctx context.Context, userId string, template phoenix.EmailTemplate) error {
+func (s *MailService) SendMail(ctx context.Context, userId string, template phoenix.EmailTemplate) error {
 	requestId := request.FromContext(ctx)
-	email, err := s.userrepo.GetUserEmailById(ctx, userId)
+	email, err := s.userRepo.GetUserEmailById(ctx, userId)
 	if err != nil {
 		logger.Error("Failed to get user email", err, appError.DBEmailQueryFailed, logger.Fields{
 			"userId":    userId,

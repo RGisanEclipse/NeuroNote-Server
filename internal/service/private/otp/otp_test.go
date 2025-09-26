@@ -6,12 +6,9 @@ import (
 	"testing"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
 )
 
 func TestRequestOTP(t *testing.T) {
@@ -112,9 +109,9 @@ func TestRequestOTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(userrepo.MockRepo)
-			mockRedisRepo := new(redisrepo.MockRedisRepo)
-			mockPhoenixService := new(phoenixservice.MockPhoenixService)
+			mockUserRepo := new(mocks.MockUserRepo)
+			mockRedisRepo := new(mocks.MockRedisRepo)
+			mockPhoenixService := new(mocks.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()
@@ -228,9 +225,9 @@ func TestVerifyOTP(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockUserRepo := new(userrepo.MockRepo)
-			mockRedisRepo := new(redisrepo.MockRedisRepo)
-			mockPhoenixService := new(phoenixservice.MockPhoenixService)
+			mockUserRepo := new(mocks.MockUserRepo)
+			mockRedisRepo := new(mocks.MockRedisRepo)
+			mockPhoenixService := new(mocks.MockPhoenixService)
 
 			service := New(mockUserRepo, mockRedisRepo, mockPhoenixService)
 			ctx := context.Background()

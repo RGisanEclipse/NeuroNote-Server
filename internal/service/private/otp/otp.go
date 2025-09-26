@@ -18,10 +18,10 @@ import (
 type Service struct {
 	userrepo       userrepo.Repository
 	redisrepo      redisrepo.Repository
-	phoenixservice phoenixservice.PhoenixService
+	phoenixservice phoenixservice.Service
 }
 
-func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice phoenixservice.PhoenixService) *Service {
+func New(userrepo userrepo.Repository, repo redisrepo.Repository, phoenixservice phoenixservice.Service) *Service {
 	return &Service{
 		userrepo:       userrepo,
 		redisrepo:      repo,
