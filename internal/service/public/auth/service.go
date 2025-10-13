@@ -78,7 +78,7 @@ type SignupService interface {
 }
 
 type ForgotPasswordService interface {
-	ForgotPasswordOTP(ctx context.Context, email string) (authModels.GenericOTPResponse, *appError.Code)
+	ForgotPasswordOTP(ctx context.Context, email string) (authModels.ForgotPasswordOTPResponse, *appError.Code)
 	ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authModels.ForgotPasswordResponse, *appError.Code)
 	ResetPassword(ctx context.Context, userId, password string) (authModels.ResetPasswordResponse, *appError.Code)
 }

@@ -14,6 +14,11 @@ func (m *MockUserRepo) UserExists(ctx context.Context, email string) (bool, erro
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockUserRepo) UserExistsById(ctx context.Context, userId string) (bool, error) {
+	args := m.Called(ctx, userId)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockUserRepo) CreateUser(ctx context.Context, email, passwordHash, userId string) (bool, error) {
 	args := m.Called(ctx, email, passwordHash, userId)
 	return args.Bool(0), args.Error(1)

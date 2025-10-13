@@ -20,7 +20,7 @@ func (s *forgotPasswordService) ResetPassword(ctx context.Context, userId string
 		"requestId": reqID,
 		"purpose":   "forgot_password",
 	}
-	exists, err := s.userRepo.UserExists(ctx, userId)
+	exists, err := s.userRepo.UserExistsById(ctx, userId)
 	if err != nil {
 		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed)
 		return authModels.ResetPasswordResponse{
@@ -99,7 +99,7 @@ func (s *forgotPasswordService) ResetPassword(ctx context.Context, userId string
 	}, nil
 }
 
-func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email string) (authModels.GenericOTPResponse, *appError.Code) {
+func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email string) (authModels.ForgotPasswordOTPResponse, *appError.Code) {
 	reqID := request.FromContext(ctx)
 	creds, err := s.userRepo.GetUserCreds(ctx, email)
 
@@ -109,12 +109,12 @@ func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email str
 				"requestId": reqID,
 				"email":     email,
 			})
-			return authModels.GenericOTPResponse{
+			return authModels.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.AuthEmailDoesntExist.Message,
 			}, appError.AuthEmailDoesntExist
 		}
-		return authModels.GenericOTPResponse{
+		return authModels.ForgotPasswordOTPResponse{
 			Success: false,
 			Message: appError.ServerInternalError.Message,
 		}, appError.ServerInternalError
@@ -131,7 +131,7 @@ func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email str
 
 	if sysErr != nil {
 		logger.Error("Failed to send OTP due to system error", sysErr, appError.AuthOtpSendFailure, logFields)
-		return authModels.GenericOTPResponse{
+		return authModels.ForgotPasswordOTPResponse{
 			Success: false,
 			Message: appError.ServerInternalError.Message,
 		}, appError.ServerInternalError
@@ -139,7 +139,7 @@ func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email str
 
 	if logicalError != nil {
 		logger.Warn("Failed to send OTP due to logical error", logicalError, logicalError, logFields)
-		return authModels.GenericOTPResponse{
+		return authModels.ForgotPasswordOTPResponse{
 			Success: false,
 			Message: logicalError.Message,
 		}, logicalError
@@ -147,9 +147,10 @@ func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email str
 
 	logger.Info("Forgot Password OTP sent successfully", logFields)
 
-	return authModels.GenericOTPResponse{
+	return authModels.ForgotPasswordOTPResponse{
 		Success: success,
 		Message: "OTP sent successfully",
+		UserId:  userId,
 	}, nil
 }
 
