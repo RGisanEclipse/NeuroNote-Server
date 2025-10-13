@@ -30,6 +30,19 @@ func setRefreshTokenCookie(w http.ResponseWriter, token string) {
 	})
 }
 
+// setUserIdCookie sets a user ID cookie with secure settings
+func setUserIdCookie(w http.ResponseWriter, userId string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "userId",
+		Value:    userId,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+		MaxAge:   86400 * 30, // 30 days
+	})
+}
+
 func RegisterAuthRoutes(router *mux.Router, svc *authservice.Service) {
 	// Auth flows
 	registerSignupRoutes(router, svc.Signup)
@@ -320,7 +333,16 @@ func forgotPasswordOTPHandler(svc authservice.ForgotPasswordService) http.Handle
 			"message":   res.Message,
 		})
 
-		response.WriteSuccess(w, res)
+		if res.Success && res.UserId != "" {
+			setUserIdCookie(w, res.UserId)
+		}
+
+		genericResponse := authmodel.GenericOTPResponse{
+			Success: res.Success,
+			Message: res.Message,
+		}
+
+		response.WriteSuccess(w, genericResponse)
 	}
 }
 

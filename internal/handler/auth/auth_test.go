@@ -56,9 +56,9 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "InvalidJSON_Returns400",
-			requestBody: `{"email":"test@example.com","password":}`,
-			contentType: "application/json",
+			name:           "InvalidJSON_Returns400",
+			requestBody:    `{"email":"test@example.com","password":}`,
+			contentType:    "application/json",
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -77,9 +77,9 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyBody_Returns400",
-			requestBody: ``,
-			contentType: "application/json",
+			name:           "EmptyBody_Returns400",
+			requestBody:    ``,
+			contentType:    "application/json",
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -94,9 +94,9 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			Signup: mockSvc,
-		}
+			svc := &authservice.Service{
+				Signup: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/signup", bytes.NewReader([]byte(tt.requestBody)))
@@ -183,9 +183,9 @@ func TestSigninHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			Signin: mockSvc,
-		}
+			svc := &authservice.Service{
+				Signin: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/signin", bytes.NewReader([]byte(tt.requestBody)))
@@ -237,16 +237,16 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "Unauthorized_Returns401",
-			requestBody: `{"refresh_token":"invalid-token"}`,
-			mockReturn:  authmodel.RefreshTokenServiceResponse{},
-			mockError:   appError.AuthInvalidRefreshToken,
+			name:           "Unauthorized_Returns401",
+			requestBody:    `{"refresh_token":"invalid-token"}`,
+			mockReturn:     authmodel.RefreshTokenServiceResponse{},
+			mockError:      appError.AuthInvalidRefreshToken,
 			expectedStatus: http.StatusUnauthorized,
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyToken_Returns400",
-			requestBody: `{"refresh_token":""}`,
+			name:           "EmptyToken_Returns400",
+			requestBody:    `{"refresh_token":""}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -261,9 +261,9 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			Signin: mockSvc,
-		}
+			svc := &authservice.Service{
+				Signin: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/token/refresh", bytes.NewReader([]byte(tt.requestBody)))
@@ -315,14 +315,14 @@ func TestSignupOTPHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyUserId_Returns400",
-			requestBody: `{"userId":""}`,
+			name:           "EmptyUserId_Returns400",
+			requestBody:    `{"userId":""}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
 		{
-			name:        "InvalidJSON_Returns400",
-			requestBody: `{"userId":}`,
+			name:           "InvalidJSON_Returns400",
+			requestBody:    `{"userId":}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -337,9 +337,9 @@ func TestSignupOTPHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			Signup: mockSvc,
-		}
+			svc := &authservice.Service{
+				Signup: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/signup/otp", bytes.NewReader([]byte(tt.requestBody)))
@@ -391,14 +391,14 @@ func TestSignupOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyUserId_Returns400",
-			requestBody: `{"userId":"","code":"123456"}`,
+			name:           "EmptyUserId_Returns400",
+			requestBody:    `{"userId":"","code":"123456"}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
 		{
-			name:        "EmptyCode_Returns400",
-			requestBody: `{"userId":"user123","code":""}`,
+			name:           "EmptyCode_Returns400",
+			requestBody:    `{"userId":"user123","code":""}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -413,9 +413,9 @@ func TestSignupOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			Signup: mockSvc,
-		}
+			svc := &authservice.Service{
+				Signup: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/signup/otp/verify", bytes.NewReader([]byte(tt.requestBody)))
@@ -450,7 +450,7 @@ func TestForgotPasswordOTPHandler_HTTPConcerns(t *testing.T) {
 	tests := []struct {
 		name           string
 		requestBody    string
-		mockReturn     authmodel.GenericOTPResponse
+		mockReturn     authmodel.ForgotPasswordOTPResponse
 		mockError      *appError.Code
 		expectedStatus int
 		expectCall     bool
@@ -458,26 +458,28 @@ func TestForgotPasswordOTPHandler_HTTPConcerns(t *testing.T) {
 		{
 			name:        "Success_Returns200",
 			requestBody: `{"email":"test@example.com"}`,
-			mockReturn: authmodel.GenericOTPResponse{
+			mockReturn: authmodel.ForgotPasswordOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
+				UserId:  "user123",
 			},
 			mockError:      mocks.NoError(),
 			expectedStatus: http.StatusOK,
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyEmail_Returns400",
-			requestBody: `{"email":""}`,
+			name:           "EmptyEmail_Returns400",
+			requestBody:    `{"email":""}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
 		{
 			name:        "NotFound_Returns404",
 			requestBody: `{"email":"nonexistent@example.com"}`,
-			mockReturn: authmodel.GenericOTPResponse{
+			mockReturn: authmodel.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.AuthEmailDoesntExist.Message,
+				UserId:  "",
 			},
 			mockError:      appError.AuthEmailDoesntExist,
 			expectedStatus: http.StatusNotFound,
@@ -494,9 +496,9 @@ func TestForgotPasswordOTPHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			ForgotPassword: mockSvc,
-		}
+			svc := &authservice.Service{
+				ForgotPassword: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/password/otp", bytes.NewReader([]byte(tt.requestBody)))
@@ -549,14 +551,14 @@ func TestForgotPasswordOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyUserId_Returns400",
-			requestBody: `{"userId":"","code":"123456"}`,
+			name:           "EmptyUserId_Returns400",
+			requestBody:    `{"userId":"","code":"123456"}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
 		{
-			name:        "EmptyCode_Returns400",
-			requestBody: `{"userId":"user123","code":""}`,
+			name:           "EmptyCode_Returns400",
+			requestBody:    `{"userId":"user123","code":""}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -571,9 +573,9 @@ func TestForgotPasswordOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			ForgotPassword: mockSvc,
-		}
+			svc := &authservice.Service{
+				ForgotPassword: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/password/otp/verify", bytes.NewReader([]byte(tt.requestBody)))
@@ -625,14 +627,14 @@ func TestPasswordResetHandler_HTTPConcerns(t *testing.T) {
 			expectCall:     true,
 		},
 		{
-			name:        "EmptyUserId_Returns400",
-			requestBody: `{"userId":"","password":"newpassword123"}`,
+			name:           "EmptyUserId_Returns400",
+			requestBody:    `{"userId":"","password":"newpassword123"}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
 		{
-			name:        "InvalidUserIdLength_Returns400",
-			requestBody: `{"userId":"short","password":"newpassword123"}`,
+			name:           "InvalidUserIdLength_Returns400",
+			requestBody:    `{"userId":"short","password":"newpassword123"}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},
@@ -658,9 +660,9 @@ func TestPasswordResetHandler_HTTPConcerns(t *testing.T) {
 			}
 
 			r := mux.NewRouter()
-		svc := &authservice.Service{
-			ForgotPassword: mockSvc,
-		}
+			svc := &authservice.Service{
+				ForgotPassword: mockSvc,
+			}
 			authhandler.RegisterAuthRoutes(r, svc)
 
 			req := httptest.NewRequest("POST", "/api/v1/auth/password/reset", bytes.NewReader([]byte(tt.requestBody)))
@@ -723,7 +725,7 @@ func TestAuthRoutes_Registration(t *testing.T) {
 			req := httptest.NewRequest(route.method, route.path, nil)
 			rec := httptest.NewRecorder()
 			r.ServeHTTP(rec, req)
-			
+
 			// Should not get 404 (route not found)
 			assert.NotEqual(t, http.StatusNotFound, rec.Code, "Route %s %s should be registered", route.method, route.path)
 		})

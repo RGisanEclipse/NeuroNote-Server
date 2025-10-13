@@ -29,6 +29,17 @@ func (r *gormRepo) UserExists(ctx context.Context, email string) (bool, error) {
 	return count > 0, nil
 }
 
+func (r *gormRepo) UserExistsById(ctx context.Context, userId string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).
+		Model(&user.Model{}).
+		Where("user_id = ?", userId).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (r *gormRepo) CreateUser(ctx context.Context, email, hash, userId string) (bool, error) {
 	u := user.Model{UserID: userId, Email: email, PasswordHash: hash}
 	if err := r.db.WithContext(ctx).Create(&u).Error; err != nil {

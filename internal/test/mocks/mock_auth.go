@@ -35,9 +35,9 @@ func (m *MockAuthService) SignupOTPVerify(ctx context.Context, userId, code stri
 	return args.Get(0).(authmodel.GenericOTPResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.GenericOTPResponse, *appError.Code) {
+func (m *MockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.ForgotPasswordOTPResponse, *appError.Code) {
 	args := m.Called(ctx, email)
-	return args.Get(0).(authmodel.GenericOTPResponse), args.Get(1).(*appError.Code)
+	return args.Get(0).(authmodel.ForgotPasswordOTPResponse), args.Get(1).(*appError.Code)
 }
 
 func (m *MockAuthService) ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authmodel.ForgotPasswordResponse, *appError.Code) {

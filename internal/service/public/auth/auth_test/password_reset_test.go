@@ -18,7 +18,7 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 		name           string
 		email          string
 		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOTPService)
-		expectedResult authmodel.GenericOTPResponse
+		expectedResult authmodel.ForgotPasswordOTPResponse
 		expectedError  *appError.Code
 	}{
 		{
@@ -30,9 +30,10 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 				userRepo.On("GetUserCreds", mock.Anything, "test@example.com").Return(creds, nil)
 				otpService.On("RequestOTP", mock.Anything, "user123", "forgot_password").Return(true, mocks.NoError(), nil)
 			},
-			expectedResult: authmodel.GenericOTPResponse{
+			expectedResult: authmodel.ForgotPasswordOTPResponse{
 				Success: true,
 				Message: "OTP sent successfully",
+				UserId:  "user123",
 			},
 			expectedError: mocks.NoError(),
 		},
@@ -43,9 +44,10 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 				// Mock user doesn't exist - need to simulate gorm.ErrRecordNotFound
 				userRepo.On("GetUserCreds", mock.Anything, "nonexistent@example.com").Return(nil, assert.AnError)
 			},
-			expectedResult: authmodel.GenericOTPResponse{
+			expectedResult: authmodel.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.ServerInternalError.Message,
+				UserId:  "",
 			},
 			expectedError: appError.ServerInternalError,
 		},
@@ -56,9 +58,10 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 				// Mock database error
 				userRepo.On("GetUserCreds", mock.Anything, "test@example.com").Return(nil, assert.AnError)
 			},
-			expectedResult: authmodel.GenericOTPResponse{
+			expectedResult: authmodel.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.ServerInternalError.Message,
+				UserId:  "",
 			},
 			expectedError: appError.ServerInternalError,
 		},
@@ -70,9 +73,10 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 				userRepo.On("GetUserCreds", mock.Anything, "test@example.com").Return(creds, nil)
 				otpService.On("RequestOTP", mock.Anything, "user123", "forgot_password").Return(false, appError.AuthOtpSendFailure, nil)
 			},
-			expectedResult: authmodel.GenericOTPResponse{
+			expectedResult: authmodel.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.AuthOtpSendFailure.Message,
+				UserId:  "",
 			},
 			expectedError: appError.AuthOtpSendFailure,
 		},
@@ -84,9 +88,10 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 				userRepo.On("GetUserCreds", mock.Anything, "test@example.com").Return(creds, nil)
 				otpService.On("RequestOTP", mock.Anything, "user123", "forgot_password").Return(false, mocks.NoError(), assert.AnError)
 			},
-			expectedResult: authmodel.GenericOTPResponse{
+			expectedResult: authmodel.ForgotPasswordOTPResponse{
 				Success: false,
 				Message: appError.ServerInternalError.Message,
+				UserId:  "",
 			},
 			expectedError: appError.ServerInternalError,
 		},
@@ -242,7 +247,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "NewPassword123!",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check
-				userRepo.On("UserExists", mock.Anything, "user1234567890").Return(true, nil)
+				userRepo.On("UserExistsById", mock.Anything, "user1234567890").Return(true, nil)
 				// Mock OTP verification check
 				redisRepo.On("CheckPasswordResetFlag", mock.Anything, "user1234567890").Return(true, nil)
 				// Mock user password reset
@@ -262,7 +267,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "newpassword123",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check
-				userRepo.On("UserExists", mock.Anything, "user1234567890").Return(true, nil)
+				userRepo.On("UserExistsById", mock.Anything, "user1234567890").Return(true, nil)
 				// Mock OTP verification check fails
 				redisRepo.On("CheckPasswordResetFlag", mock.Anything, "user1234567890").Return(false, nil)
 			},
@@ -278,7 +283,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "newpassword123",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check for empty userId
-				userRepo.On("UserExists", mock.Anything, "").Return(false, nil)
+				userRepo.On("UserExistsById", mock.Anything, "").Return(false, nil)
 			},
 			expectedResult: authmodel.ResetPasswordResponse{
 				Success: false,
@@ -292,7 +297,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "newpassword123",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check for short userId
-				userRepo.On("UserExists", mock.Anything, "short").Return(false, nil)
+				userRepo.On("UserExistsById", mock.Anything, "short").Return(false, nil)
 			},
 			expectedResult: authmodel.ResetPasswordResponse{
 				Success: false,
@@ -306,7 +311,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "weak",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check
-				userRepo.On("UserExists", mock.Anything, "user1234567890").Return(true, nil)
+				userRepo.On("UserExistsById", mock.Anything, "user1234567890").Return(true, nil)
 				// Mock OTP verification check
 				redisRepo.On("CheckPasswordResetFlag", mock.Anything, "user1234567890").Return(true, nil)
 			},
@@ -322,7 +327,7 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			password: "newpassword123",
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				// Mock user exists check
-				userRepo.On("UserExists", mock.Anything, "user1234567890").Return(true, nil)
+				userRepo.On("UserExistsById", mock.Anything, "user1234567890").Return(true, nil)
 				// Mock Redis error
 				redisRepo.On("CheckPasswordResetFlag", mock.Anything, "user1234567890").Return(false, assert.AnError)
 			},

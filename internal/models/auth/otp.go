@@ -6,7 +6,12 @@ type SignupOTPRequest struct {
 
 type ForgotPasswordOTPRequest struct {
 	Email string `json:"email"`
-	Code  string `json:"code"`
+}
+
+type ForgotPasswordOTPResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"errorMessage,omitempty"` // omit when empty (errors)
+	UserId  string `json:"userId"`
 }
 
 type OTPVerifyRequest struct {
