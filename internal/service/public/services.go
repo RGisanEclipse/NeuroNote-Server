@@ -17,7 +17,7 @@ func New() *Services {
 	dbConn := db.GetDB()
 	redisClient := redis.Client
 
-	userrepo := user.NewGormRepo(dbConn)
+	userrepo := user.NewUserRepo(dbConn)
 	redisRepo := redis.NewRedisRepo(redisClient)
 
 	phoenixClient := phoenixservice.NewBrevoClient()

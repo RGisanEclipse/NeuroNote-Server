@@ -69,6 +69,7 @@ const (
 	authSigninFailed              = "AUTH_018"
 	authTokenVerificationFailed   = "AUTH_019"
 	authInvalidTokenSigningMethod = "AUTH_020"
+	authUserNotVerified           = "AUTH_021"
 )
 
 // Email validation errors (email*)
@@ -98,6 +99,15 @@ const (
 	dbUserCreationFailed = "DB_005"
 	dbUserQueryFailed    = "DB_006"
 	dbEmailQueryFailed   = "DB_007"
+)
+
+// Onboarding errors (ob*)
+const (
+	obNameTooLong          = "OB_001"
+	obNameTooShort         = "OB_002"
+	obInvalidAge           = "OB_003"
+	obInvalidGender        = "OB_004"
+	obUserAlreadyOnboarded = "OB_005"
 )
 
 // Redis errors (redis*)
@@ -166,6 +176,7 @@ var (
 	AuthPasswordOtpNotVerified    = NewErrorCode(authPasswordOtpNotVerified, "password OTP not verified", http.StatusBadRequest)
 	AuthSignupFailed              = NewErrorCode(authSignupFailed, "signup failed", http.StatusUnauthorized)
 	AuthSigninFailed              = NewErrorCode(authSigninFailed, "signin failed", http.StatusUnauthorized)
+	AuthUserNotVerified           = NewErrorCode(authUserNotVerified, "user not verified", http.StatusUnauthorized)
 	AuthTokenVerificationFailed   = NewErrorCode(authTokenVerificationFailed, "token verification failed", http.StatusUnauthorized)
 	AuthInvalidTokenSigningMethod = NewErrorCode(authInvalidTokenSigningMethod, "invalid token signing method", http.StatusUnauthorized)
 
@@ -188,6 +199,12 @@ var (
 	DBUserCreationFailed = NewErrorCode(dbUserCreationFailed, "failed to create user", http.StatusInternalServerError)
 	DBUserQueryFailed    = NewErrorCode(dbUserQueryFailed, "failed to query user", http.StatusInternalServerError)
 	DBEmailQueryFailed   = NewErrorCode(dbEmailQueryFailed, "failed to query user email", http.StatusInternalServerError)
+
+	OBNameTooLong          = NewErrorCode(obNameTooLong, "name is too long", http.StatusBadRequest)
+	OBNameTooShort         = NewErrorCode(obNameTooShort, "name is too short", http.StatusBadRequest)
+	OBInvalidAge           = NewErrorCode(obInvalidAge, "age too short or big", http.StatusBadRequest)
+	OBInvalidGender        = NewErrorCode(obInvalidGender, "invalid gender", http.StatusBadRequest)
+	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusBadRequest)
 
 	RedisConnectionFailed             = NewErrorCode(redisConnectionFailed, "failed to connect to Redis", http.StatusInternalServerError)
 	RedisSetRefreshTokenFailed        = NewErrorCode(redisSetRefreshTokenFailed, "failed to set refresh token", http.StatusInternalServerError)
@@ -244,6 +261,7 @@ func GetErrorByCode(code string) (*Code, bool) {
 		authOtpSendFailure:         AuthOtpSendFailure,
 		authOtpVerificationFailure: AuthOtpVerificationFailure,
 		authPasswordOtpNotVerified: AuthPasswordOtpNotVerified,
+		authUserNotVerified:        AuthUserNotVerified,
 
 		// Email validation
 		emailRequired: EmailRequired,
@@ -267,6 +285,13 @@ func GetErrorByCode(code string) (*Code, bool) {
 		dbUserCreationFailed: DBUserCreationFailed,
 		dbUserQueryFailed:    DBUserQueryFailed,
 		dbEmailQueryFailed:   DBEmailQueryFailed,
+
+		// Onboarding
+		obNameTooLong:          OBNameTooLong,
+		obNameTooShort:         OBNameTooShort,
+		obInvalidAge:           OBInvalidAge,
+		obInvalidGender:        OBInvalidGender,
+		obUserAlreadyOnboarded: OBUserAlreadyOnboarded,
 
 		// Redis
 		redisConnectionFailed:             RedisConnectionFailed,

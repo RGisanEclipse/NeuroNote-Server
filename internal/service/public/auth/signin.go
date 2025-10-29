@@ -40,6 +40,16 @@ func (s *signinService) Signin(ctx context.Context, email, password string) (aut
 			IsVerified: false,
 		}, appError.ServerInternalError
 	}
+	if !isVerified {
+		logger.Warn(appError.AuthUserNotVerified.Message, nil, appError.AuthUserNotVerified, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.ServiceResponse{
+			Success:    false,
+			Message:    appError.AuthUserNotVerified.Message,
+			IsVerified: false,
+		}, appError.AuthUserNotVerified
+	}
 
 	if !authutils.CheckPasswordHash(password, creds.PasswordHash) {
 		logger.Warn(appError.AuthIncorrectPassword.Message, nil, appError.AuthIncorrectPassword, logger.Fields{
