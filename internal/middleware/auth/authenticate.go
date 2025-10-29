@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
+	"github.com/sirupsen/logrus"
 )
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -21,6 +22,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			logger.Debug("Token", logrus.Fields{
+				"header": parts,
+			})
 			http.Error(w, error.AuthUnauthorized.Message, http.StatusUnauthorized)
 			return
 		}

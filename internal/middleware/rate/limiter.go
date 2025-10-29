@@ -12,6 +12,7 @@ import (
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 )
 
 const rateLimitWindow = time.Minute
@@ -31,7 +32,7 @@ func Limit(next http.Handler) http.Handler {
 		}
 
 		var key string
-		if userID, ok := r.Context().Value("userID").(string); ok && userID != "" {
+		if userID, ok := r.Context().Value(user.UserIdKey).(string); ok && userID != "" {
 			key = "rate:user:" + userID + ":" + route
 		} else {
 			key = "rate:ip:" + ip + ":" + route

@@ -8,6 +8,7 @@ import (
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
 	obService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/onboarding"
 	"github.com/gorilla/mux"
@@ -23,7 +24,16 @@ func onboardUserHandler(svc obService.Service) http.HandlerFunc {
 		ctx := r.Context()
 		reqID := request.FromContext(ctx)
 
-		var req om.Model
+		userID, ok := ctx.Value(user.UserIdKey).(string)
+		if !ok || userID == "" {
+			logger.Warn("User ID not found in context", nil, appError.AuthUnauthorized, logger.Fields{
+				"requestId": reqID,
+			})
+			response.WriteError(w, appError.AuthUnauthorized)
+			return
+		}
+
+		var req om.Request
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			logger.Warn(appError.ServerInvalidBody.Message, err, appError.ServerInvalidBody, logger.Fields{
 				"requestId": reqID,
@@ -32,18 +42,17 @@ func onboardUserHandler(svc obService.Service) http.HandlerFunc {
 			return
 		}
 
-		if req.UserID == "" {
-			logger.Warn("Empty userID in onboarding request", nil, appError.ServerBadRequest, logger.Fields{
-				"requestId": reqID,
-			})
-			response.WriteError(w, appError.ServerBadRequest)
-			return
+		onboardingData := om.Model{
+			UserID: userID,
+			Name:   req.Name,
+			Age:    req.Age,
+			Gender: req.Gender,
 		}
 
-		success, errCode := svc.OnboardUser(ctx, req.UserID, req)
+		success, errCode := svc.OnboardUser(ctx, userID, onboardingData)
 		if errCode != nil {
 			logger.Warn(errCode.Message, nil, errCode, logger.Fields{
-				"userId":    req.UserID,
+				"userId":    userID,
 				"requestId": reqID,
 			})
 			response.WriteError(w, errCode)
@@ -52,7 +61,7 @@ func onboardUserHandler(svc obService.Service) http.HandlerFunc {
 
 		if success {
 			logger.Info("User onboarded successfully", logger.Fields{
-				"userId":    req.UserID,
+				"userId":    userID,
 				"requestId": reqID,
 			})
 			response.WriteSuccess(w, map[string]interface{}{

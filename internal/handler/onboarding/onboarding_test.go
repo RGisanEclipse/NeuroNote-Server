@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
 	"github.com/stretchr/testify/assert"
@@ -25,8 +26,7 @@ func TestOnboardUserHandler(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 1,
@@ -60,30 +60,8 @@ func TestOnboardUserHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "EmptyUserID",
-			requestBody: om.Model{
-				UserID: "",
-				Name:   "John Doe",
-				Age:    25,
-				Gender: 1,
-			},
-			mockSetup: func(svc *mocks.MockOnboardingService) {
-				// No mocks needed for validation errors
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.ServerBadRequest.Code,
-					"message": appError.ServerBadRequest.Message,
-					"status":  float64(appError.ServerBadRequest.Status),
-				},
-			},
-		},
-		{
 			name: "ValidationError_NameTooShort",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "",
 				Age:    25,
 				Gender: 1,
@@ -103,8 +81,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "ValidationError_NameTooLong",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "ThisIsAVeryLongNameThatExceedsFiftyCharactersAndShouldFailValidation",
 				Age:    25,
 				Gender: 1,
@@ -124,8 +101,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "ValidationError_InvalidAge",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    12,
 				Gender: 1,
@@ -145,8 +121,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "ValidationError_InvalidGender",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 2,
@@ -166,8 +141,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "UserNotFound",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 1,
@@ -187,8 +161,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "UserAlreadyOnboarded",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 1,
@@ -208,8 +181,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "UserNotVerified",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 1,
@@ -229,8 +201,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "DatabaseError",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "John Doe",
 				Age:    25,
 				Gender: 1,
@@ -250,8 +221,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "SuccessWithGenderZero",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "Jane Doe",
 				Age:    30,
 				Gender: 0,
@@ -270,8 +240,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "SuccessWithMinimumAge",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "Young User",
 				Age:    13,
 				Gender: 1,
@@ -290,8 +259,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name: "SuccessWithMaximumAge",
-			requestBody: om.Model{
-				UserID: "user1234567890",
+			requestBody: om.Request{
 				Name:   "Old User",
 				Age:    100,
 				Gender: 1,
@@ -310,7 +278,7 @@ func TestOnboardUserHandler(t *testing.T) {
 		},
 		{
 			name:        "MalformedJSON",
-			requestBody: `{"userID": "user1234567890", "name": "John Doe", "age": 25, "gender": 1,}`,
+			requestBody: `{"name": "John Doe", "age": 25, "gender": 1,}`,
 			mockSetup: func(svc *mocks.MockOnboardingService) {
 				// No mocks needed for JSON parsing errors
 			},
@@ -364,6 +332,7 @@ func TestOnboardUserHandler(t *testing.T) {
 			rr := httptest.NewRecorder()
 
 			ctx := context.WithValue(req.Context(), "requestId", "test-request-id")
+			ctx = context.WithValue(ctx, user.UserIdKey, "user1234567890")
 			req = req.WithContext(ctx)
 
 			handler.ServeHTTP(rr, req)
