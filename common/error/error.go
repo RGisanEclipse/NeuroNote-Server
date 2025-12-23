@@ -6,7 +6,7 @@ import (
 
 // Code represents a structured error with code, message, and HTTP status
 type Code struct {
-	Code    string `json:"code"`
+	Code    string `json:"errorCode"`
 	Message string `json:"message"`
 	Status  int    `json:"status"`
 }
