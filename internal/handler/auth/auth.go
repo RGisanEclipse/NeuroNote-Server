@@ -114,7 +114,7 @@ func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 		response.WriteSuccess(w, map[string]interface{}{
 			"token":      res.AccessToken,
 			"isVerified": res.IsVerified,
-		}, res.Message)
+		})
 	}
 }
 
@@ -164,7 +164,7 @@ func signinHandler(svc authservice.SigninService) http.HandlerFunc {
 		response.WriteSuccess(w, map[string]interface{}{
 			"token":      res.AccessToken,
 			"isVerified": res.IsVerified,
-		}, res.Message)
+		})
 	}
 }
 

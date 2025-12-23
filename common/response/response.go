@@ -7,11 +7,11 @@ import (
 	apperror "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 )
 
-// SuccessResponse represents a successful API response
-type SuccessResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
+// Response represents a successful API response
+type Response struct {
+	Success  bool        `json:"success"`
+	Status   int         `json:"status"`
+	Response interface{} `json:"response"`
 }
 
 // WriteJSON writes a JSON response
@@ -22,22 +22,30 @@ func WriteJSON(w http.ResponseWriter, status int, payload interface{}) {
 }
 
 // WriteSuccess writes a success response
-func WriteSuccess(w http.ResponseWriter, data interface{}, message ...string) {
-	response := SuccessResponse{
-		Success: true,
-		Data:    data,
+func WriteSuccess(w http.ResponseWriter, data interface{}) {
+	status := http.StatusOK
+	response := Response{
+		Success:  true,
+		Status:   status,
+		Response: data,
 	}
-	if len(message) > 0 {
-		response.Message = message[0]
-	}
-	WriteJSON(w, http.StatusOK, response)
+	WriteJSON(w, status, response)
 }
 
 // WriteError writes an error response with error code
 func WriteError(w http.ResponseWriter, errorCode *apperror.Code, data ...interface{}) {
-	response := apperror.NewErrorResponse(errorCode.Code, errorCode.Message, errorCode.Status)
+	errorResponse := map[string]interface{}{
+		"code":    errorCode.Code,
+		"message": errorCode.Message,
+	}
 	if len(data) > 0 {
-		response.Data = data[0]
+		errorResponse["data"] = data[0]
+	}
+
+	response := Response{
+		Success:  false,
+		Status:   errorCode.Status,
+		Response: errorResponse,
 	}
 	WriteJSON(w, errorCode.Status, response)
 }

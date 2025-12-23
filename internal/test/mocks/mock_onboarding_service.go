@@ -14,3 +14,7 @@ func (m *MockOnboardingService) OnboardUser(ctx context.Context, userId string, 
 	args := m.Called(ctx, userId, onboardingData)
 	return args.Bool(0), args.Get(1).(*appError.Code)
 }
+
+
+
+

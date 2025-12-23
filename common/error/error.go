@@ -28,21 +28,6 @@ func NewErrorCode(code, message string, status int) *Code {
 	}
 }
 
-// Response represents the API error response structure
-type Response struct {
-	Success bool  `json:"success"`
-	Error   *Code `json:"error"`
-	Data    any   `json:"data,omitempty"`
-}
-
-// NewErrorResponse creates a new error response
-func NewErrorResponse(code, message string, status int) Response {
-	return Response{
-		Success: false,
-		Error:   NewErrorCode(code, message, status),
-	}
-}
-
 //
 // Error codes by category (camelCase, Go convention)
 //
@@ -174,8 +159,8 @@ var (
 	AuthOtpSendFailure            = NewErrorCode(authOtpSendFailure, "failed to send OTP", http.StatusInternalServerError)
 	AuthOtpVerificationFailure    = NewErrorCode(authOtpVerificationFailure, "failed to verify OTP", http.StatusBadRequest)
 	AuthPasswordOtpNotVerified    = NewErrorCode(authPasswordOtpNotVerified, "password OTP not verified", http.StatusBadRequest)
-	AuthSignupFailed              = NewErrorCode(authSignupFailed, "signup failed", http.StatusUnauthorized)
-	AuthSigninFailed              = NewErrorCode(authSigninFailed, "signin failed", http.StatusUnauthorized)
+	AuthSignupFailed              = NewErrorCode(authSignupFailed, "signup failed", http.StatusBadRequest)
+	AuthSigninFailed              = NewErrorCode(authSigninFailed, "signin failed", http.StatusInternalServerError)
 	AuthUserNotVerified           = NewErrorCode(authUserNotVerified, "user not verified", http.StatusUnauthorized)
 	AuthTokenVerificationFailed   = NewErrorCode(authTokenVerificationFailed, "token verification failed", http.StatusUnauthorized)
 	AuthInvalidTokenSigningMethod = NewErrorCode(authInvalidTokenSigningMethod, "invalid token signing method", http.StatusUnauthorized)
@@ -204,7 +189,7 @@ var (
 	OBNameTooShort         = NewErrorCode(obNameTooShort, "name is too short", http.StatusBadRequest)
 	OBInvalidAge           = NewErrorCode(obInvalidAge, "age too short or big", http.StatusBadRequest)
 	OBInvalidGender        = NewErrorCode(obInvalidGender, "invalid gender", http.StatusBadRequest)
-	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusBadRequest)
+	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusConflict)
 
 	RedisConnectionFailed             = NewErrorCode(redisConnectionFailed, "failed to connect to Redis", http.StatusInternalServerError)
 	RedisSetRefreshTokenFailed        = NewErrorCode(redisSetRefreshTokenFailed, "failed to set refresh token", http.StatusInternalServerError)
@@ -218,7 +203,7 @@ var (
 
 	OtpInvalidRequest    = NewErrorCode(otpInvalidRequest, "invalid OTP request", http.StatusBadRequest)
 	OtpEmptyEmailForUser = NewErrorCode(otpEmptyEmailForUser, "email empty for user", http.StatusBadRequest)
-	OtpExpiredOrNotFound = NewErrorCode(otpExpiredOrNotFound, "OTP expired or not found", http.StatusBadRequest)
+	OtpExpiredOrNotFound = NewErrorCode(otpExpiredOrNotFound, "OTP expired or not found", http.StatusGone)
 	OtpInvalid           = NewErrorCode(otpInvalid, "invalid OTP", http.StatusBadRequest)
 	OtpInvalidPurpose    = NewErrorCode(otpInvalidPurpose, "invalid OTP purpose", http.StatusBadRequest)
 	OtpCodeMissing       = NewErrorCode(otpCodeMissing, "OTP code is required", http.StatusBadRequest)
@@ -238,7 +223,7 @@ var (
 	ServerJSONUnmarshalError     = NewErrorCode(serverJSONUnmarshalError, "error unmarshalling JSON", http.StatusBadRequest)
 	ServerRequestCreationFailure = NewErrorCode(serverRequestCreationFailure, "failed to create request", http.StatusInternalServerError)
 	ServerRequestDeliveryFailure = NewErrorCode(serverRequestDeliveryFailure, "failed to send Brevo request", http.StatusInternalServerError)
-	ServerNon200ResponseError    = NewErrorCode(serverNon200ResponseError, "received non-200 response from API", http.StatusInternalServerError)
+	ServerNon200ResponseError    = NewErrorCode(serverNon200ResponseError, "received non-200 response from API", http.StatusBadGateway)
 )
 
 // GetErrorByCode maps string codes to ErrorCode objects

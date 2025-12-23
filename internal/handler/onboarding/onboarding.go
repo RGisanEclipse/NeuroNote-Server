@@ -16,7 +16,7 @@ import (
 
 // RegisterOnboardingRoutes registers all onboarding-related routes.
 func RegisterOnboardingRoutes(router *mux.Router, svc obService.Service) {
-	router.HandleFunc("/api/v1/onboarding", onboardUserHandler(svc)).Methods("POST")
+	router.HandleFunc("/api/v1/onboarding/onboard", onboardUserHandler(svc)).Methods("POST")
 }
 
 func onboardUserHandler(svc obService.Service) http.HandlerFunc {
