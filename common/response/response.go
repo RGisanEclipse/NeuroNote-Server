@@ -35,8 +35,8 @@ func WriteSuccess(w http.ResponseWriter, data interface{}) {
 // WriteError writes an error response with error code
 func WriteError(w http.ResponseWriter, errorCode *apperror.Code, data ...interface{}) {
 	errorResponse := map[string]interface{}{
-		"code":    errorCode.Code,
-		"message": errorCode.Message,
+		"errorCode": errorCode.Code,
+		"message":   errorCode.Message,
 	}
 	if len(data) > 0 {
 		errorResponse["data"] = data[0]

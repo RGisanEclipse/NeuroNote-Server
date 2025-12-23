@@ -6,9 +6,9 @@ import (
 
 // Code represents a structured error with code, message, and HTTP status
 type Code struct {
-	Code    string `json:"errorCode"`
-	Message string `json:"message"`
-	Status  int    `json:"status"`
+	Code    string
+	Message string
+	Status  int
 }
 
 // Error implements the error interface
