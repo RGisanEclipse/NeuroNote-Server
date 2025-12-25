@@ -114,7 +114,7 @@ func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 		response.WriteSuccess(w, map[string]interface{}{
 			"token":      res.AccessToken,
 			"isVerified": res.IsVerified,
-		}, res.Message)
+		})
 	}
 }
 
@@ -152,19 +152,21 @@ func signinHandler(svc authservice.SigninService) http.HandlerFunc {
 			return
 		}
 		logger.Info("Response from signin handler", logrus.Fields{
-			"email":      req.Email,
-			"requestId":  reqID,
-			"success":    res.Success,
-			"message":    res.Message,
-			"isVerified": res.IsVerified,
+			"email":       req.Email,
+			"requestId":   reqID,
+			"success":     res.Success,
+			"message":     res.Message,
+			"isVerified":  res.IsVerified,
+			"isOnboarded": res.IsOnboarded,
 		})
 
 		setRefreshTokenCookie(w, res.RefreshToken)
 
 		response.WriteSuccess(w, map[string]interface{}{
-			"token":      res.AccessToken,
-			"isVerified": res.IsVerified,
-		}, res.Message)
+			"token":       res.AccessToken,
+			"isVerified":  res.IsVerified,
+			"isOnboarded": res.IsOnboarded,
+		})
 	}
 }
 

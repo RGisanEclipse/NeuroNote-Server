@@ -10,10 +10,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/auth"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"
@@ -55,13 +55,13 @@ func main() {
 		w.Write([]byte("ok"))
 	}).Methods("GET")
 
-	// Register public routes with the handler
-	public := router.NewRoute().Subrouter()
-	handler.RegisterPublicRoutes(public, publicServices)
+	// Register publicRouter routes with the handler
+	publicRouter := router.NewRoute().Subrouter()
+	handler.RegisterPublicRoutes(publicRouter, publicServices)
 
-	private := router.NewRoute().Subrouter()
-	private.Use(auth.AuthMiddleware)
-	handler.RegisterPrivateRoutes(private, privateServices)
+	privateRouter := router.NewRoute().Subrouter()
+	privateRouter.Use(auth.AuthMiddleware)
+	handler.RegisterPrivateRoutes(privateRouter, privateServices)
 
 	// Setup Port and Server
 	port := os.Getenv("PORT")

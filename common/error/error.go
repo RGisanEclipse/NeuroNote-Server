@@ -6,9 +6,9 @@ import (
 
 // Code represents a structured error with code, message, and HTTP status
 type Code struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	Status  int    `json:"status"`
+	Code    string
+	Message string
+	Status  int
 }
 
 // Error implements the error interface
@@ -25,21 +25,6 @@ func NewErrorCode(code, message string, status int) *Code {
 		Code:    code,
 		Message: message,
 		Status:  status,
-	}
-}
-
-// Response represents the API error response structure
-type Response struct {
-	Success bool  `json:"success"`
-	Error   *Code `json:"error"`
-	Data    any   `json:"data,omitempty"`
-}
-
-// NewErrorResponse creates a new error response
-func NewErrorResponse(code, message string, status int) Response {
-	return Response{
-		Success: false,
-		Error:   NewErrorCode(code, message, status),
 	}
 }
 
@@ -69,6 +54,7 @@ const (
 	authSigninFailed              = "AUTH_018"
 	authTokenVerificationFailed   = "AUTH_019"
 	authInvalidTokenSigningMethod = "AUTH_020"
+	authUserNotVerified           = "AUTH_021"
 )
 
 // Email validation errors (email*)
@@ -98,6 +84,15 @@ const (
 	dbUserCreationFailed = "DB_005"
 	dbUserQueryFailed    = "DB_006"
 	dbEmailQueryFailed   = "DB_007"
+)
+
+// Onboarding errors (ob*)
+const (
+	obNameTooLong          = "OB_001"
+	obNameTooShort         = "OB_002"
+	obInvalidAge           = "OB_003"
+	obInvalidGender        = "OB_004"
+	obUserAlreadyOnboarded = "OB_005"
 )
 
 // Redis errors (redis*)
@@ -164,8 +159,9 @@ var (
 	AuthOtpSendFailure            = NewErrorCode(authOtpSendFailure, "failed to send OTP", http.StatusInternalServerError)
 	AuthOtpVerificationFailure    = NewErrorCode(authOtpVerificationFailure, "failed to verify OTP", http.StatusBadRequest)
 	AuthPasswordOtpNotVerified    = NewErrorCode(authPasswordOtpNotVerified, "password OTP not verified", http.StatusBadRequest)
-	AuthSignupFailed              = NewErrorCode(authSignupFailed, "signup failed", http.StatusUnauthorized)
-	AuthSigninFailed              = NewErrorCode(authSigninFailed, "signin failed", http.StatusUnauthorized)
+	AuthSignupFailed              = NewErrorCode(authSignupFailed, "signup failed", http.StatusBadRequest)
+	AuthSigninFailed              = NewErrorCode(authSigninFailed, "signin failed", http.StatusInternalServerError)
+	AuthUserNotVerified           = NewErrorCode(authUserNotVerified, "user not verified", http.StatusUnauthorized)
 	AuthTokenVerificationFailed   = NewErrorCode(authTokenVerificationFailed, "token verification failed", http.StatusUnauthorized)
 	AuthInvalidTokenSigningMethod = NewErrorCode(authInvalidTokenSigningMethod, "invalid token signing method", http.StatusUnauthorized)
 
@@ -189,6 +185,12 @@ var (
 	DBUserQueryFailed    = NewErrorCode(dbUserQueryFailed, "failed to query user", http.StatusInternalServerError)
 	DBEmailQueryFailed   = NewErrorCode(dbEmailQueryFailed, "failed to query user email", http.StatusInternalServerError)
 
+	OBNameTooLong          = NewErrorCode(obNameTooLong, "name is too long", http.StatusBadRequest)
+	OBNameTooShort         = NewErrorCode(obNameTooShort, "name is too short", http.StatusBadRequest)
+	OBInvalidAge           = NewErrorCode(obInvalidAge, "age too short or big", http.StatusBadRequest)
+	OBInvalidGender        = NewErrorCode(obInvalidGender, "invalid gender", http.StatusBadRequest)
+	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusConflict)
+
 	RedisConnectionFailed             = NewErrorCode(redisConnectionFailed, "failed to connect to Redis", http.StatusInternalServerError)
 	RedisSetRefreshTokenFailed        = NewErrorCode(redisSetRefreshTokenFailed, "failed to set refresh token", http.StatusInternalServerError)
 	RedisGetRefreshTokenFailed        = NewErrorCode(redisGetRefreshTokenFailed, "failed to get refresh token", http.StatusInternalServerError)
@@ -201,7 +203,7 @@ var (
 
 	OtpInvalidRequest    = NewErrorCode(otpInvalidRequest, "invalid OTP request", http.StatusBadRequest)
 	OtpEmptyEmailForUser = NewErrorCode(otpEmptyEmailForUser, "email empty for user", http.StatusBadRequest)
-	OtpExpiredOrNotFound = NewErrorCode(otpExpiredOrNotFound, "OTP expired or not found", http.StatusBadRequest)
+	OtpExpiredOrNotFound = NewErrorCode(otpExpiredOrNotFound, "OTP expired or not found", http.StatusGone)
 	OtpInvalid           = NewErrorCode(otpInvalid, "invalid OTP", http.StatusBadRequest)
 	OtpInvalidPurpose    = NewErrorCode(otpInvalidPurpose, "invalid OTP purpose", http.StatusBadRequest)
 	OtpCodeMissing       = NewErrorCode(otpCodeMissing, "OTP code is required", http.StatusBadRequest)
@@ -221,7 +223,7 @@ var (
 	ServerJSONUnmarshalError     = NewErrorCode(serverJSONUnmarshalError, "error unmarshalling JSON", http.StatusBadRequest)
 	ServerRequestCreationFailure = NewErrorCode(serverRequestCreationFailure, "failed to create request", http.StatusInternalServerError)
 	ServerRequestDeliveryFailure = NewErrorCode(serverRequestDeliveryFailure, "failed to send Brevo request", http.StatusInternalServerError)
-	ServerNon200ResponseError    = NewErrorCode(serverNon200ResponseError, "received non-200 response from API", http.StatusInternalServerError)
+	ServerNon200ResponseError    = NewErrorCode(serverNon200ResponseError, "received non-200 response from API", http.StatusBadGateway)
 )
 
 // GetErrorByCode maps string codes to ErrorCode objects
@@ -244,6 +246,7 @@ func GetErrorByCode(code string) (*Code, bool) {
 		authOtpSendFailure:         AuthOtpSendFailure,
 		authOtpVerificationFailure: AuthOtpVerificationFailure,
 		authPasswordOtpNotVerified: AuthPasswordOtpNotVerified,
+		authUserNotVerified:        AuthUserNotVerified,
 
 		// Email validation
 		emailRequired: EmailRequired,
@@ -267,6 +270,13 @@ func GetErrorByCode(code string) (*Code, bool) {
 		dbUserCreationFailed: DBUserCreationFailed,
 		dbUserQueryFailed:    DBUserQueryFailed,
 		dbEmailQueryFailed:   DBEmailQueryFailed,
+
+		// Onboarding
+		obNameTooLong:          OBNameTooLong,
+		obNameTooShort:         OBNameTooShort,
+		obInvalidAge:           OBInvalidAge,
+		obInvalidGender:        OBInvalidGender,
+		obUserAlreadyOnboarded: OBUserAlreadyOnboarded,
 
 		// Redis
 		redisConnectionFailed:             RedisConnectionFailed,

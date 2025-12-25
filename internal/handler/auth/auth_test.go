@@ -110,13 +110,14 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
-				assert.Contains(t, resp, "message")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -199,12 +200,14 @@ func TestSigninHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -277,12 +280,14 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -353,12 +358,14 @@ func TestSignupOTPHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -429,12 +436,14 @@ func TestSignupOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -512,12 +521,14 @@ func TestForgotPasswordOTPHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -589,12 +600,14 @@ func TestForgotPasswordOTPVerifyHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {
@@ -676,12 +689,14 @@ func TestPasswordResetHandler_HTTPConcerns(t *testing.T) {
 			var resp map[string]interface{}
 			_ = json.NewDecoder(rec.Body).Decode(&resp)
 
+			assert.Contains(t, resp, "success")
+			assert.Contains(t, resp, "status")
+			assert.Contains(t, resp, "response")
+
 			if tt.expectedStatus == http.StatusOK {
 				assert.True(t, resp["success"].(bool))
-				assert.Contains(t, resp, "data")
 			} else {
 				assert.False(t, resp["success"].(bool))
-				assert.Contains(t, resp, "error")
 			}
 
 			if tt.expectCall {

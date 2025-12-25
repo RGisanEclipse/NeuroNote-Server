@@ -1,7 +1,6 @@
 package rate
 
 import (
-	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -10,8 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
 )
 
 const rateLimitWindow = time.Minute
@@ -31,7 +32,7 @@ func Limit(next http.Handler) http.Handler {
 		}
 
 		var key string
-		if userID, ok := r.Context().Value("userID").(string); ok && userID != "" {
+		if userID, ok := r.Context().Value(user.UserIdKey).(string); ok && userID != "" {
 			key = "rate:user:" + userID + ":" + route
 		} else {
 			key = "rate:ip:" + ip + ":" + route
@@ -58,14 +59,7 @@ func Limit(next http.Handler) http.Handler {
 				appError.ServerTooManyRequests,
 				logrus.Fields{"ip": ip, "route": route, "key": key},
 			)
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusTooManyRequests)
-			_ = json.NewEncoder(w).Encode(appError.NewErrorResponse(
-				appError.ServerTooManyRequests.Code,
-				appError.ServerTooManyRequests.Message,
-				appError.ServerTooManyRequests.Status,
-			))
+			response.WriteError(w, appError.ServerTooManyRequests)
 			return
 		}
 

@@ -7,18 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type gormRepo struct{ db *gorm.DB }
+type repo struct{ db *gorm.DB }
 
-// NewGormRepo returns a concrete repo backed by Gorm/PostgreSQL.
-func NewGormRepo(db *gorm.DB) Repository {
-	return &gormRepo{db}
+func NewUserRepo(db *gorm.DB) Repository {
+	return &repo{db}
 }
 
-// ---------------------------
-// interface methods
-// ---------------------------
-
-func (r *gormRepo) UserExists(ctx context.Context, email string) (bool, error) {
+func (r *repo) UserExists(ctx context.Context, email string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).
 		Model(&user.Model{}).
@@ -29,7 +24,7 @@ func (r *gormRepo) UserExists(ctx context.Context, email string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *gormRepo) UserExistsById(ctx context.Context, userId string) (bool, error) {
+func (r *repo) UserExistsById(ctx context.Context, userId string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).
 		Model(&user.Model{}).
@@ -40,7 +35,7 @@ func (r *gormRepo) UserExistsById(ctx context.Context, userId string) (bool, err
 	return count > 0, nil
 }
 
-func (r *gormRepo) CreateUser(ctx context.Context, email, hash, userId string) (bool, error) {
+func (r *repo) CreateUser(ctx context.Context, email, hash, userId string) (bool, error) {
 	u := user.Model{UserID: userId, Email: email, PasswordHash: hash}
 	if err := r.db.WithContext(ctx).Create(&u).Error; err != nil {
 		return false, err
@@ -48,7 +43,7 @@ func (r *gormRepo) CreateUser(ctx context.Context, email, hash, userId string) (
 	return true, nil
 }
 
-func (r *gormRepo) GetUserCreds(ctx context.Context, email string) (*Creds, error) {
+func (r *repo) GetUserCreds(ctx context.Context, email string) (*Creds, error) {
 	var u user.Model
 	err := r.db.WithContext(ctx).
 		Select("user_id", "password_hash").
@@ -61,7 +56,7 @@ func (r *gormRepo) GetUserCreds(ctx context.Context, email string) (*Creds, erro
 	return &Creds{Id: u.UserID, PasswordHash: u.PasswordHash}, nil
 }
 
-func (r *gormRepo) IsUserVerified(ctx context.Context, userId string) (bool, error) {
+func (r *repo) IsUserVerified(ctx context.Context, userId string) (bool, error) {
 	var u user.Model
 	err := r.db.WithContext(ctx).
 		Select("is_verified").
@@ -74,7 +69,7 @@ func (r *gormRepo) IsUserVerified(ctx context.Context, userId string) (bool, err
 	return u.IsVerified, nil
 }
 
-func (r *gormRepo) GetUserEmailById(ctx context.Context, userId string) (string, error) {
+func (r *repo) GetUserEmailById(ctx context.Context, userId string) (string, error) {
 	var u user.Model
 	err := r.db.WithContext(ctx).
 		Select("email").
@@ -87,14 +82,14 @@ func (r *gormRepo) GetUserEmailById(ctx context.Context, userId string) (string,
 	return u.Email, nil
 }
 
-func (r *gormRepo) MarkUserVerified(ctx context.Context, userId string) error {
+func (r *repo) MarkUserVerified(ctx context.Context, userId string) error {
 	return r.db.WithContext(ctx).
 		Model(&user.Model{}).
 		Where("user_id = ?", userId).
 		Update("is_verified", true).Error
 }
 
-func (r *gormRepo) ResetPassword(ctx context.Context, userId, password string) error {
+func (r *repo) ResetPassword(ctx context.Context, userId, password string) error {
 	return r.db.WithContext(ctx).
 		Model(&user.Model{}).
 		Where("user_id = ?", userId).

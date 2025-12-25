@@ -40,6 +40,16 @@ func (s *signinService) Signin(ctx context.Context, email, password string) (aut
 			IsVerified: false,
 		}, appError.ServerInternalError
 	}
+	if !isVerified {
+		logger.Warn(appError.AuthUserNotVerified.Message, nil, appError.AuthUserNotVerified, logger.Fields{
+			"requestId": reqID,
+		})
+		return authModels.ServiceResponse{
+			Success:    false,
+			Message:    appError.AuthUserNotVerified.Message,
+			IsVerified: false,
+		}, appError.AuthUserNotVerified
+	}
 
 	if !authutils.CheckPasswordHash(password, creds.PasswordHash) {
 		logger.Warn(appError.AuthIncorrectPassword.Message, nil, appError.AuthIncorrectPassword, logger.Fields{
@@ -74,6 +84,14 @@ func (s *signinService) Signin(ctx context.Context, email, password string) (aut
 		}, appError.ServerInternalError
 	}
 
+	var isOnboarded = false
+	isOnboarded, err = s.onboardingRepo.IsOnboardedAlready(ctx, userId)
+	if err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{
+			"requestId": reqID,
+		})
+	}
+
 	logger.Info("User logged in successfully", logger.Fields{
 		"email":     email,
 		"requestId": reqID,
@@ -85,5 +103,6 @@ func (s *signinService) Signin(ctx context.Context, email, password string) (aut
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		IsVerified:   isVerified,
+		IsOnboarded:  isOnboarded,
 	}, nil
 }
