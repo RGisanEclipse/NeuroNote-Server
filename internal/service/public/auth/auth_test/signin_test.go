@@ -25,7 +25,7 @@ func TestSigninService_Signin(t *testing.T) {
 		name           string
 		email          string
 		password       string
-		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOTPService)
+		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOnboardingRepo)
 		expectedResult func(authmodel.ServiceResponse) bool
 		expectedError  *appError.Code
 	}{
@@ -33,7 +33,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "Success",
 			email:    "user@example.com",
 			password: "ValidPass123@",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				// Mock user credentials exist
 				creds := &userrepo.Creds{
 					Id:           "user123",
@@ -42,11 +42,62 @@ func TestSigninService_Signin(t *testing.T) {
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
 				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(true, nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
 				return result.Success &&
 					result.Message == "Logged in successfully" &&
 					result.IsVerified &&
+					result.IsOnboarded &&
+					result.AccessToken != "" &&
+					result.RefreshToken != ""
+			},
+			expectedError: mocks.NoError(),
+		},
+		{
+			name:     "SuccessNotOnboarded",
+			email:    "user@example.com",
+			password: "ValidPass123@",
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
+				creds := &userrepo.Creds{
+					Id:           "user123",
+					PasswordHash: "$2a$10$SQ7QNOG6LkLWwNCKValiX.dTOiQCBWs.R/XoetupHRVMuTqfXqkha",
+				}
+				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
+				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, nil)
+			},
+			expectedResult: func(result authmodel.ServiceResponse) bool {
+				return result.Success &&
+					result.Message == "Logged in successfully" &&
+					result.IsVerified &&
+					!result.IsOnboarded &&
+					result.AccessToken != "" &&
+					result.RefreshToken != ""
+			},
+			expectedError: mocks.NoError(),
+		},
+		{
+			name:     "SuccessOnboardingCheckFails",
+			email:    "user@example.com",
+			password: "ValidPass123@",
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
+				creds := &userrepo.Creds{
+					Id:           "user123",
+					PasswordHash: "$2a$10$SQ7QNOG6LkLWwNCKValiX.dTOiQCBWs.R/XoetupHRVMuTqfXqkha",
+				}
+				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
+				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				// Onboarding check fails - should still succeed with isOnboarded = false
+				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, assert.AnError)
+			},
+			expectedResult: func(result authmodel.ServiceResponse) bool {
+				return result.Success &&
+					result.Message == "Logged in successfully" &&
+					result.IsVerified &&
+					!result.IsOnboarded && // Defaults to false on error
 					result.AccessToken != "" &&
 					result.RefreshToken != ""
 			},
@@ -56,7 +107,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "WrongPassword",
 			email:    "user@example.com",
 			password: "wrongPassword1@",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				// Mock user credentials exist but password doesn't match
 				creds := &userrepo.Creds{
 					Id:           "user123",
@@ -74,7 +125,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "EmailDoesNotExist",
 			email:    "ghost@example.com",
 			password: "randomPassword!2",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				// Mock user doesn't exist
 				userRepo.On("GetUserCreds", mock.Anything, "ghost@example.com").Return(nil, nil)
 			},
@@ -87,7 +138,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "DatabaseError",
 			email:    "user@example.com",
 			password: "ValidPass123@",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				// Mock database error
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(nil, assert.AnError)
 			},
@@ -100,7 +151,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "IsVerifiedCheckFails",
 			email:    "user@example.com",
 			password: "ValidPass123@",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				creds := &userrepo.Creds{
 					Id:           "user123",
 					PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye5IcR4OVqkeha6e5dJSNEqEA/7Y7cQwm",
@@ -117,7 +168,7 @@ func TestSigninService_Signin(t *testing.T) {
 			name:     "RedisTokenStoreFails",
 			email:    "user@example.com",
 			password: "ValidPass123@",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				creds := &userrepo.Creds{
 					Id:           "user123",
 					PasswordHash: "$2a$10$SQ7QNOG6LkLWwNCKValiX.dTOiQCBWs.R/XoetupHRVMuTqfXqkha",
@@ -138,13 +189,13 @@ func TestSigninService_Signin(t *testing.T) {
 			// Create mocks
 			userRepo := new(mocks.MockUserRepo)
 			redisRepo := new(mocks.MockRedisRepo)
-			otpService := new(mocks.MockOTPService)
+			onboardingRepo := new(mocks.MockOnboardingRepo)
 
 			// Setup mocks
-			tt.mockSetup(userRepo, redisRepo, otpService)
+			tt.mockSetup(userRepo, redisRepo, onboardingRepo)
 
 			// Create the actual signin service
-			signinSvc := authservice.NewSigninService(userRepo, redisRepo)
+			signinSvc := authservice.NewSigninService(userRepo, redisRepo, onboardingRepo)
 
 			// Test the service method
 			result, errCode := signinSvc.Signin(context.Background(), tt.email, tt.password)
@@ -156,7 +207,7 @@ func TestSigninService_Signin(t *testing.T) {
 			// Verify mock expectations
 			userRepo.AssertExpectations(t)
 			redisRepo.AssertExpectations(t)
-			otpService.AssertExpectations(t)
+			onboardingRepo.AssertExpectations(t)
 		})
 	}
 }
@@ -165,14 +216,14 @@ func TestSigninService_RefreshToken(t *testing.T) {
 	tests := []struct {
 		name           string
 		refreshToken   string
-		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOTPService)
+		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOnboardingRepo)
 		expectedResult func(authmodel.RefreshTokenServiceResponse) bool
 		expectedError  *appError.Code
 	}{
 		{
 			name:         "InvalidTokenFormat",
 			refreshToken: "invalid-token-format",
-			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
+			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, onboardingRepo *mocks.MockOnboardingRepo) {
 				// No mocks needed - token validation will fail at JWT parsing level
 			},
 			expectedResult: func(result authmodel.RefreshTokenServiceResponse) bool {
@@ -187,10 +238,10 @@ func TestSigninService_RefreshToken(t *testing.T) {
 			// Create mocks
 			userRepo := new(mocks.MockUserRepo)
 			redisRepo := new(mocks.MockRedisRepo)
-			otpService := new(mocks.MockOTPService)
+			onboardingRepo := new(mocks.MockOnboardingRepo)
 
 			// Setup mocks
-			tt.mockSetup(userRepo, redisRepo, otpService)
+			tt.mockSetup(userRepo, redisRepo, onboardingRepo)
 
 			// Test validation logic
 			if tt.refreshToken == "" {
@@ -200,7 +251,7 @@ func TestSigninService_RefreshToken(t *testing.T) {
 			// Verify mock expectations
 			userRepo.AssertExpectations(t)
 			redisRepo.AssertExpectations(t)
-			otpService.AssertExpectations(t)
+			onboardingRepo.AssertExpectations(t)
 		})
 	}
 }

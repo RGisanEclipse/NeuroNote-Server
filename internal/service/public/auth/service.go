@@ -5,6 +5,7 @@ import (
 	"time"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	onboardingRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/onboarding"
 	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
@@ -23,10 +24,11 @@ type Service struct {
 func NewService(
 	userRepo userrepo.Repository,
 	redisRepo redisrepo.Repository,
+	onboardingRepo onboardingRepo.Repository,
 	otpSvc otpService.S,
 ) *Service {
 	return &Service{
-		Signin:         NewSigninService(userRepo, redisRepo),
+		Signin:         NewSigninService(userRepo, redisRepo, onboardingRepo),
 		Signup:         NewSignupService(userRepo, otpSvc, redisRepo),
 		ForgotPassword: NewForgotPasswordService(userRepo, otpSvc, redisRepo),
 	}
@@ -44,8 +46,9 @@ type signupService struct {
 }
 
 type signinService struct {
-	userRepo  userrepo.Repository
-	redisRepo redisrepo.Repository
+	userRepo       userrepo.Repository
+	redisRepo      redisrepo.Repository
+	onboardingRepo onboardingRepo.Repository
 }
 
 type forgotPasswordService struct {
@@ -58,8 +61,8 @@ func NewSignupService(userRepo userrepo.Repository, otpSvc otpService.S, redisRe
 	return &signupService{userRepo: userRepo, otpService: otpSvc, redisRepo: redisRepo}
 }
 
-func NewSigninService(userRepo userrepo.Repository, redisRepo redisrepo.Repository) SigninService {
-	return &signinService{userRepo: userRepo, redisRepo: redisRepo}
+func NewSigninService(userRepo userrepo.Repository, redisRepo redisrepo.Repository, onboardingRepo onboardingRepo.Repository) SigninService {
+	return &signinService{userRepo: userRepo, redisRepo: redisRepo, onboardingRepo: onboardingRepo}
 }
 
 func NewForgotPasswordService(userRepo userrepo.Repository, otpSvc otpService.S, redisRepo redisrepo.Repository) ForgotPasswordService {

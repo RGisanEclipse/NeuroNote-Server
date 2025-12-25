@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -18,8 +19,9 @@ var once sync.Once
 
 func Init() error {
 	var err error
+
 	once.Do(func() {
-		dataBaseSource := fmt.Sprintf(
+		dsn := fmt.Sprintf(
 			"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Kolkata",
 			os.Getenv("DB_HOST"),
 			os.Getenv("DB_USER"),
@@ -28,20 +30,24 @@ func Init() error {
 			os.Getenv("DB_PORT"),
 		)
 
-		common.DB, err = gorm.Open(postgres.Open(dataBaseSource), &gorm.Config{})
+		common.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err != nil {
 			return
 		}
 
-		// Auto-migrate the User table.
-		if err = common.DB.AutoMigrate(&user.Model{}); err != nil {
+		if err = common.DB.AutoMigrate(
+			&user.Model{},
+			&onboarding.Model{},
+		); err != nil {
 			return
 		}
-		logger.Info("Connected to Postgres and ran migrations")
+
+		logger.Info("Connected to Postgres and ran dev migrations")
 	})
 
 	return err
 }
+
 func GetDB() *gorm.DB {
 	return common.DB
 }

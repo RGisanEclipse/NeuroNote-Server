@@ -11,5 +11,5 @@ type Model struct {
 }
 
 func (Model) TableName() string {
-	return "onboarding.details"
+	return "onboarding_details"
 }
