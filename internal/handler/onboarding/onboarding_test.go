@@ -37,7 +37,8 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"success": true,
-				"data": map[string]interface{}{
+				"status":  float64(http.StatusOK),
+				"response": map[string]interface{}{
 					"success": true,
 					"message": "User onboarded successfully",
 				},
@@ -52,10 +53,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.ServerBadRequest.Code,
-					"message": appError.ServerBadRequest.Message,
-					"status":  float64(appError.ServerBadRequest.Status),
+				"status":  float64(appError.ServerBadRequest.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.ServerBadRequest.Code,
+					"message":   appError.ServerBadRequest.Message,
 				},
 			},
 		},
@@ -72,10 +73,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.OBNameTooShort.Code,
-					"message": appError.OBNameTooShort.Message,
-					"status":  float64(appError.OBNameTooShort.Status),
+				"status":  float64(appError.OBNameTooShort.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.OBNameTooShort.Code,
+					"message":   appError.OBNameTooShort.Message,
 				},
 			},
 		},
@@ -92,10 +93,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.OBNameTooLong.Code,
-					"message": appError.OBNameTooLong.Message,
-					"status":  float64(appError.OBNameTooLong.Status),
+				"status":  float64(appError.OBNameTooLong.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.OBNameTooLong.Code,
+					"message":   appError.OBNameTooLong.Message,
 				},
 			},
 		},
@@ -112,10 +113,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.OBInvalidAge.Code,
-					"message": appError.OBInvalidAge.Message,
-					"status":  float64(appError.OBInvalidAge.Status),
+				"status":  float64(appError.OBInvalidAge.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.OBInvalidAge.Code,
+					"message":   appError.OBInvalidAge.Message,
 				},
 			},
 		},
@@ -132,10 +133,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.OBInvalidGender.Code,
-					"message": appError.OBInvalidGender.Message,
-					"status":  float64(appError.OBInvalidGender.Status),
+				"status":  float64(appError.OBInvalidGender.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.OBInvalidGender.Code,
+					"message":   appError.OBInvalidGender.Message,
 				},
 			},
 		},
@@ -152,10 +153,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.AuthUserNotFound.Code,
-					"message": appError.AuthUserNotFound.Message,
-					"status":  float64(appError.AuthUserNotFound.Status),
+				"status":  float64(appError.AuthUserNotFound.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.AuthUserNotFound.Code,
+					"message":   appError.AuthUserNotFound.Message,
 				},
 			},
 		},
@@ -169,13 +170,13 @@ func TestOnboardUserHandler(t *testing.T) {
 			mockSetup: func(svc *mocks.MockOnboardingService) {
 				svc.On("OnboardUser", mock.Anything, "user1234567890", mock.AnythingOfType("onboarding.Model")).Return(false, appError.OBUserAlreadyOnboarded)
 			},
-			expectedStatus: http.StatusBadRequest,
+			expectedStatus: http.StatusConflict,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.OBUserAlreadyOnboarded.Code,
-					"message": appError.OBUserAlreadyOnboarded.Message,
-					"status":  float64(appError.OBUserAlreadyOnboarded.Status),
+				"status":  float64(appError.OBUserAlreadyOnboarded.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.OBUserAlreadyOnboarded.Code,
+					"message":   appError.OBUserAlreadyOnboarded.Message,
 				},
 			},
 		},
@@ -192,10 +193,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.AuthUserNotVerified.Code,
-					"message": appError.AuthUserNotVerified.Message,
-					"status":  float64(appError.AuthUserNotVerified.Status),
+				"status":  float64(appError.AuthUserNotVerified.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.AuthUserNotVerified.Code,
+					"message":   appError.AuthUserNotVerified.Message,
 				},
 			},
 		},
@@ -212,10 +213,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.DBInsertFailed.Code,
-					"message": appError.DBInsertFailed.Message,
-					"status":  float64(appError.DBInsertFailed.Status),
+				"status":  float64(appError.DBInsertFailed.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.DBInsertFailed.Code,
+					"message":   appError.DBInsertFailed.Message,
 				},
 			},
 		},
@@ -232,7 +233,8 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"success": true,
-				"data": map[string]interface{}{
+				"status":  float64(http.StatusOK),
+				"response": map[string]interface{}{
 					"success": true,
 					"message": "User onboarded successfully",
 				},
@@ -251,7 +253,8 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"success": true,
-				"data": map[string]interface{}{
+				"status":  float64(http.StatusOK),
+				"response": map[string]interface{}{
 					"success": true,
 					"message": "User onboarded successfully",
 				},
@@ -270,7 +273,8 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			expectedBody: map[string]interface{}{
 				"success": true,
-				"data": map[string]interface{}{
+				"status":  float64(http.StatusOK),
+				"response": map[string]interface{}{
 					"success": true,
 					"message": "User onboarded successfully",
 				},
@@ -285,10 +289,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.ServerBadRequest.Code,
-					"message": appError.ServerBadRequest.Message,
-					"status":  float64(appError.ServerBadRequest.Status),
+				"status":  float64(appError.ServerBadRequest.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.ServerBadRequest.Code,
+					"message":   appError.ServerBadRequest.Message,
 				},
 			},
 		},
@@ -301,10 +305,10 @@ func TestOnboardUserHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: map[string]interface{}{
 				"success": false,
-				"error": map[string]interface{}{
-					"code":    appError.ServerBadRequest.Code,
-					"message": appError.ServerBadRequest.Message,
-					"status":  float64(appError.ServerBadRequest.Status),
+				"status":  float64(appError.ServerBadRequest.Status),
+				"response": map[string]interface{}{
+					"errorCode": appError.ServerBadRequest.Code,
+					"message":   appError.ServerBadRequest.Message,
 				},
 			},
 		},
