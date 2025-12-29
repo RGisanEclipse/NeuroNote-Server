@@ -24,6 +24,7 @@ func TestSignupService_Signup(t *testing.T) {
 		name           string
 		email          string
 		password       string
+		deviceId       string
 		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOTPService)
 		expectedResult func(authmodel.ServiceResponse) bool
 		expectedError  *appError.Code
@@ -118,7 +119,11 @@ func TestSignupService_Signup(t *testing.T) {
 			signupSvc := authservice.NewSignupService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := signupSvc.Signup(context.Background(), tt.email, tt.password)
+			result, errCode := signupSvc.Signup(context.Background(), authmodel.Request{
+				Email:    tt.email,
+				Password: tt.password,
+				DeviceID: tt.deviceId,
+			})
 
 			// Verify results
 			assert.True(t, tt.expectedResult(result), "Result validation failed")
@@ -204,7 +209,9 @@ func TestSignupService_SignupOTP(t *testing.T) {
 			signupSvc := authservice.NewSignupService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := signupSvc.SignupOTP(context.Background(), tt.userId)
+			result, errCode := signupSvc.SignupOTP(context.Background(), authmodel.SignupOTPRequest{
+				UserId: tt.userId,
+			})
 
 			// Verify results
 			assert.Equal(t, tt.expectedResult, result)
@@ -310,7 +317,10 @@ func TestSignupService_SignupOTPVerify(t *testing.T) {
 			signupSvc := authservice.NewSignupService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := signupSvc.SignupOTPVerify(context.Background(), tt.userId, tt.code)
+			result, errCode := signupSvc.SignupOTPVerify(context.Background(), authmodel.OTPVerifyRequest{
+				UserId: tt.userId,
+				Code:   tt.code,
+			})
 
 			// Verify results
 			assert.Equal(t, tt.expectedResult, result)

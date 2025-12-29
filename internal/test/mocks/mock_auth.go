@@ -10,8 +10,8 @@ import (
 
 type MockAuthService struct{ mock.Mock }
 
-func (m *MockAuthService) Signin(ctx context.Context, email, pw string) (authmodel.ServiceResponse, *appError.Code) {
-	args := m.Called(ctx, email, pw)
+func (m *MockAuthService) Signin(ctx context.Context, request authmodel.Request) (authmodel.ServiceResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.ServiceResponse), args.Get(1).(*appError.Code)
 }
 
@@ -20,32 +20,32 @@ func (m *MockAuthService) RefreshToken(ctx context.Context, refreshToken string)
 	return args.Get(0).(authmodel.RefreshTokenServiceResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) Signup(ctx context.Context, email, pw string) (authmodel.ServiceResponse, *appError.Code) {
-	args := m.Called(ctx, email, pw)
+func (m *MockAuthService) Signup(ctx context.Context, request authmodel.Request) (authmodel.ServiceResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.ServiceResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) SignupOTP(ctx context.Context, userId string) (authmodel.GenericOTPResponse, *appError.Code) {
-	args := m.Called(ctx, userId)
+func (m *MockAuthService) SignupOTP(ctx context.Context, request authmodel.SignupOTPRequest) (authmodel.GenericOTPResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.GenericOTPResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) SignupOTPVerify(ctx context.Context, userId, code string) (authmodel.GenericOTPResponse, *appError.Code) {
-	args := m.Called(ctx, userId, code)
+func (m *MockAuthService) SignupOTPVerify(ctx context.Context, request authmodel.OTPVerifyRequest) (authmodel.GenericOTPResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.GenericOTPResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) ForgotPasswordOTP(ctx context.Context, email string) (authmodel.ForgotPasswordOTPResponse, *appError.Code) {
-	args := m.Called(ctx, email)
+func (m *MockAuthService) ForgotPasswordOTP(ctx context.Context, request authmodel.ForgotPasswordOTPRequest) (authmodel.ForgotPasswordOTPResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.ForgotPasswordOTPResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authmodel.ForgotPasswordResponse, *appError.Code) {
-	args := m.Called(ctx, userId, code)
+func (m *MockAuthService) ForgotPasswordOTPVerify(ctx context.Context, request authmodel.OTPVerifyRequest) (authmodel.ForgotPasswordResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.ForgotPasswordResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) ResetPassword(ctx context.Context, userId, password string) (authmodel.ResetPasswordResponse, *appError.Code) {
-	args := m.Called(ctx, userId, password)
+func (m *MockAuthService) ResetPassword(ctx context.Context, request authmodel.ResetPasswordRequest) (authmodel.ResetPasswordResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.ResetPasswordResponse), args.Get(1).(*appError.Code)
 }

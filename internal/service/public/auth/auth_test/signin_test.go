@@ -25,6 +25,7 @@ func TestSigninService_Signin(t *testing.T) {
 		name           string
 		email          string
 		password       string
+		deviceId       string
 		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOnboardingRepo)
 		expectedResult func(authmodel.ServiceResponse) bool
 		expectedError  *appError.Code
@@ -198,7 +199,11 @@ func TestSigninService_Signin(t *testing.T) {
 			signinSvc := authservice.NewSigninService(userRepo, redisRepo, onboardingRepo)
 
 			// Test the service method
-			result, errCode := signinSvc.Signin(context.Background(), tt.email, tt.password)
+			result, errCode := signinSvc.Signin(context.Background(), authmodel.Request{
+				Email:    tt.email,
+				Password: tt.password,
+				DeviceID: tt.deviceId,
+			})
 
 			// Verify results
 			assert.True(t, tt.expectedResult(result), "Result validation failed")

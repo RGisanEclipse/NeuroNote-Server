@@ -6,14 +6,17 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	requestMiddleware "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 	"gorm.io/gorm"
 )
 
-func (s *forgotPasswordService) ResetPassword(ctx context.Context, userId string, password string) (authModels.ResetPasswordResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *forgotPasswordService) ResetPassword(ctx context.Context, request authModels.ResetPasswordRequest) (authModels.ResetPasswordResponse, *appError.Code) {
+
+	var userId, password = request.UserId, request.Password
+
+	reqID := requestMiddleware.FromContext(ctx)
 
 	logFields := logger.Fields{
 		"userId":    userId,
@@ -99,8 +102,11 @@ func (s *forgotPasswordService) ResetPassword(ctx context.Context, userId string
 	}, nil
 }
 
-func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email string) (authModels.ForgotPasswordOTPResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, request authModels.ForgotPasswordOTPRequest) (authModels.ForgotPasswordOTPResponse, *appError.Code) {
+
+	var email = request.Email
+
+	reqID := requestMiddleware.FromContext(ctx)
 	creds, err := s.userRepo.GetUserCreds(ctx, email)
 
 	if err != nil {
@@ -154,8 +160,11 @@ func (s *forgotPasswordService) ForgotPasswordOTP(ctx context.Context, email str
 	}, nil
 }
 
-func (s *forgotPasswordService) ForgotPasswordOTPVerify(ctx context.Context, userId, otp string) (authModels.ForgotPasswordResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *forgotPasswordService) ForgotPasswordOTPVerify(ctx context.Context, request authModels.OTPVerifyRequest) (authModels.ForgotPasswordResponse, *appError.Code) {
+
+	var userId, otp = request.UserId, request.Code
+
+	reqID := requestMiddleware.FromContext(ctx)
 
 	logFields := logger.Fields{
 		"userId":    userId,

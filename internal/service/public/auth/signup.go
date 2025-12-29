@@ -5,17 +5,19 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	requestMiddleware "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 )
 
 // Signup registers a new user and returns a JWT token.
 // It checks if the email is already taken, hashes the password, creates the user
-func (s *signupService) Signup(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code) {
+func (s *signupService) Signup(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code) {
+
+	var email, password = request.Email, request.Password
 
 	exists, err := s.userRepo.UserExists(ctx, email)
-	reqID := request.FromContext(ctx)
+	reqID := requestMiddleware.FromContext(ctx)
 	if err != nil {
 		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{
 			"requestId": reqID,
@@ -95,8 +97,11 @@ func (s *signupService) Signup(ctx context.Context, email, password string) (aut
 	}, nil
 }
 
-func (s *signupService) SignupOTP(ctx context.Context, userId string) (authModels.GenericOTPResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *signupService) SignupOTP(ctx context.Context, request authModels.SignupOTPRequest) (authModels.GenericOTPResponse, *appError.Code) {
+
+	var userId = request.UserId
+
+	reqID := requestMiddleware.FromContext(ctx)
 
 	logFields := logger.Fields{
 		"userId":    userId,
@@ -138,8 +143,11 @@ func (s *signupService) SignupOTP(ctx context.Context, userId string) (authModel
 	}, nil
 }
 
-func (s *signupService) SignupOTPVerify(ctx context.Context, userId, otp string) (authModels.GenericOTPResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *signupService) SignupOTPVerify(ctx context.Context, request authModels.OTPVerifyRequest) (authModels.GenericOTPResponse, *appError.Code) {
+
+	var userId, otp = request.UserId, request.Code
+
+	reqID := requestMiddleware.FromContext(ctx)
 
 	logFields := logger.Fields{
 		"userId":    userId,

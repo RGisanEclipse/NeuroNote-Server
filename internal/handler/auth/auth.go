@@ -90,7 +90,7 @@ func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 			return
 		}
 
-		res, errCode := svc.Signup(ctx, req.Email, req.Password)
+		res, errCode := svc.Signup(ctx, req)
 		if errCode != nil {
 			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
 				"email":     req.Email,
@@ -141,7 +141,7 @@ func signinHandler(svc authservice.SigninService) http.HandlerFunc {
 			return
 		}
 
-		res, errCode := svc.Signin(ctx, req.Email, req.Password)
+		res, errCode := svc.Signin(ctx, req)
 		if errCode != nil {
 			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
 				"email":     req.Email,
@@ -234,7 +234,7 @@ func signupOTPHandler(svc authservice.SignupService) http.HandlerFunc {
 			return
 		}
 
-		res, errCode := svc.SignupOTP(ctx, req.UserId)
+		res, errCode := svc.SignupOTP(ctx, req)
 		if errCode != nil {
 			logger.Warn("Signup OTP failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
@@ -276,7 +276,7 @@ func signupOTPVerifyHandler(svc authservice.SignupService) http.HandlerFunc {
 			return
 		}
 
-		res, errCode := svc.SignupOTPVerify(ctx, req.UserId, req.Code)
+		res, errCode := svc.SignupOTPVerify(ctx, req)
 		if errCode != nil {
 			logger.Warn("Signup OTP verify failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
@@ -319,7 +319,7 @@ func forgotPasswordOTPHandler(svc authservice.ForgotPasswordService) http.Handle
 			return
 		}
 
-		res, errCode := svc.ForgotPasswordOTP(ctx, req.Email)
+		res, errCode := svc.ForgotPasswordOTP(ctx, req)
 		if errCode != nil {
 			logger.Warn("OTP Request Failed", nil, errCode, logrus.Fields{
 				"email":     req.Email,
@@ -370,7 +370,7 @@ func forgotPasswordOTPVerifyHandler(svc authservice.ForgotPasswordService) http.
 			return
 		}
 
-		res, errCode := svc.ForgotPasswordOTPVerify(ctx, req.UserId, req.Code)
+		res, errCode := svc.ForgotPasswordOTPVerify(ctx, req)
 		if errCode != nil {
 			logger.Warn("Forgot password OTP verify failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,
@@ -415,7 +415,7 @@ func passwordResetHandler(svc authservice.ForgotPasswordService) http.HandlerFun
 			return
 		}
 
-		res, errCode := svc.ResetPassword(ctx, req.UserId, req.Password)
+		res, errCode := svc.ResetPassword(ctx, req)
 		if errCode != nil {
 			logger.Warn("Password reset failed", nil, errCode, logrus.Fields{
 				"userId":    req.UserId,

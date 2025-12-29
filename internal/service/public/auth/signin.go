@@ -5,16 +5,19 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	requestMiddleware "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 )
 
 // Signin authenticates a user and returns a JWT token.
 // It checks if the user exists, verifies the password, and generates a token.
-func (s *signinService) Signin(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code) {
+func (s *signinService) Signin(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code) {
+
+	var email, password = request.Email, request.Password
+
 	creds, err := s.userRepo.GetUserCreds(ctx, email)
-	reqID := request.FromContext(ctx)
+	reqID := requestMiddleware.FromContext(ctx)
 
 	if err != nil || creds == nil {
 		logger.Error(appError.AuthEmailDoesntExist.Message, err, appError.AuthEmailDoesntExist, logger.Fields{
