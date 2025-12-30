@@ -94,6 +94,7 @@ func (s *signupService) Signup(ctx context.Context, request authModels.Request) 
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		IsVerified:   false,
+		IsOnboarded:  false,
 	}, nil
 }
 

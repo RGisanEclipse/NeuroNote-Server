@@ -7,5 +7,5 @@ type ResetPasswordRequest struct {
 
 type ResetPasswordResponse struct {
 	Success bool   `json:"success"`
-	Message string `json:"errorMessage,omitempty"` // omit when empty (errors)
+	Message string `json:"message,omitempty"`
 }

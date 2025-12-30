@@ -10,7 +10,7 @@ type ForgotPasswordOTPRequest struct {
 
 type ForgotPasswordOTPResponse struct {
 	Success bool   `json:"success"`
-	Message string `json:"errorMessage,omitempty"` // omit when empty (errors)
+	Message string `json:"message,omitempty"`
 	UserId  string `json:"userId"`
 }
 
@@ -21,11 +21,11 @@ type OTPVerifyRequest struct {
 
 type GenericOTPResponse struct {
 	Success bool   `json:"success"`
-	Message string `json:"errorMessage,omitempty"` // omit when empty (errors)
+	Message string `json:"message,omitempty"`
 }
 
 type ForgotPasswordResponse struct {
 	Success bool   `json:"success"`
-	Message string `json:"errorMessage,omitempty"` // omit when empty (errors)
-	UserId  string `json:"userId,omitempty"`       // omit when empty (errors)
+	Message string `json:"message,omitempty"`
+	UserId  string `json:"userId,omitempty"` // omit when empty (errors)
 }

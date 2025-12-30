@@ -108,18 +108,20 @@ func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 		}
 
 		logger.Info("Response from signup handler", logrus.Fields{
-			"email":      req.Email,
-			"requestId":  reqID,
-			"success":    res.Success,
-			"message":    res.Message,
-			"isVerified": res.IsVerified,
+			"email":       req.Email,
+			"requestId":   reqID,
+			"success":     res.Success,
+			"message":     res.Message,
+			"isVerified":  res.IsVerified,
+			"isOnboarded": res.IsOnboarded,
 		})
 
 		setRefreshTokenCookie(w, res.RefreshToken)
 
 		response.WriteSuccess(w, map[string]interface{}{
-			"token":      res.AccessToken,
-			"isVerified": res.IsVerified,
+			"token":       res.AccessToken,
+			"isVerified":  res.IsVerified,
+			"isOnboarded": res.IsOnboarded,
 		})
 	}
 }
