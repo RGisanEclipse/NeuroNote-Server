@@ -70,18 +70,18 @@ func NewForgotPasswordService(userRepo userrepo.Repository, otpSvc otpService.S,
 }
 
 type SigninService interface {
-	Signin(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code)
-	RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, *appError.Code)
+	Signin(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code)
+	RefreshToken(ctx context.Context, request authModels.RefreshTokenRequest) (authModels.RefreshTokenServiceResponse, *appError.Code)
 }
 
 type SignupService interface {
-	Signup(ctx context.Context, email, password string) (authModels.ServiceResponse, *appError.Code)
-	SignupOTP(ctx context.Context, userId string) (authModels.GenericOTPResponse, *appError.Code)
-	SignupOTPVerify(ctx context.Context, userId, code string) (authModels.GenericOTPResponse, *appError.Code)
+	Signup(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code)
+	SignupOTP(ctx context.Context, request authModels.SignupOTPRequest) (authModels.GenericOTPResponse, *appError.Code)
+	SignupOTPVerify(ctx context.Context, request authModels.OTPVerifyRequest) (authModels.GenericOTPResponse, *appError.Code)
 }
 
 type ForgotPasswordService interface {
-	ForgotPasswordOTP(ctx context.Context, email string) (authModels.ForgotPasswordOTPResponse, *appError.Code)
-	ForgotPasswordOTPVerify(ctx context.Context, userId, code string) (authModels.ForgotPasswordResponse, *appError.Code)
-	ResetPassword(ctx context.Context, userId, password string) (authModels.ResetPasswordResponse, *appError.Code)
+	ForgotPasswordOTP(ctx context.Context, request authModels.ForgotPasswordOTPRequest) (authModels.ForgotPasswordOTPResponse, *appError.Code)
+	ForgotPasswordOTPVerify(ctx context.Context, request authModels.OTPVerifyRequest) (authModels.ForgotPasswordResponse, *appError.Code)
+	ResetPassword(ctx context.Context, request authModels.ResetPasswordRequest) (authModels.ResetPasswordResponse, *appError.Code)
 }

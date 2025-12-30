@@ -111,7 +111,9 @@ func TestForgotPasswordService_ForgotPasswordOTP(t *testing.T) {
 			forgotPasswordSvc := authservice.NewForgotPasswordService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := forgotPasswordSvc.ForgotPasswordOTP(context.Background(), tt.email)
+			result, errCode := forgotPasswordSvc.ForgotPasswordOTP(context.Background(), authmodel.ForgotPasswordOTPRequest{
+				Email: tt.email,
+			})
 
 			// Verify results
 			assert.Equal(t, tt.expectedResult, result)
@@ -218,7 +220,10 @@ func TestForgotPasswordService_ForgotPasswordOTPVerify(t *testing.T) {
 			forgotPasswordSvc := authservice.NewForgotPasswordService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := forgotPasswordSvc.ForgotPasswordOTPVerify(context.Background(), tt.userId, tt.code)
+			result, errCode := forgotPasswordSvc.ForgotPasswordOTPVerify(context.Background(), authmodel.OTPVerifyRequest{
+				UserId: tt.userId,
+				Code:   tt.code,
+			})
 
 			// Verify results
 			assert.Equal(t, tt.expectedResult, result)
@@ -353,7 +358,10 @@ func TestForgotPasswordService_ResetPassword(t *testing.T) {
 			forgotPasswordSvc := authservice.NewForgotPasswordService(userRepo, otpService, redisRepo)
 
 			// Test the service method
-			result, errCode := forgotPasswordSvc.ResetPassword(context.Background(), tt.userId, tt.password)
+			result, errCode := forgotPasswordSvc.ResetPassword(context.Background(), authmodel.ResetPasswordRequest{
+				UserId:   tt.userId,
+				Password: tt.password,
+			})
 
 			// Verify results
 			assert.Equal(t, tt.expectedResult, result)

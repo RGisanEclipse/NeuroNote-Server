@@ -3,6 +3,7 @@ package auth
 type Request struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	DeviceID string `json:"deviceId"`
 }
 
 type ServiceResponse struct {

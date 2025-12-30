@@ -25,6 +25,7 @@ func TestSigninService_Signin(t *testing.T) {
 		name           string
 		email          string
 		password       string
+		deviceId       string
 		mockSetup      func(*mocks.MockUserRepo, *mocks.MockRedisRepo, *mocks.MockOnboardingRepo)
 		expectedResult func(authmodel.ServiceResponse) bool
 		expectedError  *appError.Code
@@ -41,7 +42,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(true, nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
@@ -65,7 +66,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
@@ -89,7 +90,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				// Onboarding check fails - should still succeed with isOnboarded = false
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, assert.AnError)
 			},
@@ -175,7 +176,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
 				return !result.Success && result.Message == appError.ServerInternalError.Message
@@ -198,7 +199,11 @@ func TestSigninService_Signin(t *testing.T) {
 			signinSvc := authservice.NewSigninService(userRepo, redisRepo, onboardingRepo)
 
 			// Test the service method
-			result, errCode := signinSvc.Signin(context.Background(), tt.email, tt.password)
+			result, errCode := signinSvc.Signin(context.Background(), authmodel.Request{
+				Email:    tt.email,
+				Password: tt.password,
+				DeviceID: tt.deviceId,
+			})
 
 			// Verify results
 			assert.True(t, tt.expectedResult(result), "Result validation failed")
