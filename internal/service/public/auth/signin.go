@@ -43,16 +43,6 @@ func (s *signinService) Signin(ctx context.Context, request authModels.Request) 
 			IsVerified: false,
 		}, appError.ServerInternalError
 	}
-	if !isVerified {
-		logger.Warn(appError.AuthUserNotVerified.Message, nil, appError.AuthUserNotVerified, logger.Fields{
-			"requestId": reqID,
-		})
-		return authModels.ServiceResponse{
-			Success:    false,
-			Message:    appError.AuthUserNotVerified.Message,
-			IsVerified: false,
-		}, appError.AuthUserNotVerified
-	}
 
 	if !authutils.CheckPasswordHash(password, creds.PasswordHash) {
 		logger.Warn(appError.AuthIncorrectPassword.Message, nil, appError.AuthIncorrectPassword, logger.Fields{
@@ -63,6 +53,12 @@ func (s *signinService) Signin(ctx context.Context, request authModels.Request) 
 			Message:    appError.AuthIncorrectPassword.Message,
 			IsVerified: false,
 		}, appError.AuthIncorrectPassword
+	}
+
+	if !isVerified {
+		logger.Warn(appError.AuthUserNotVerified.Message, nil, appError.AuthUserNotVerified, logger.Fields{
+			"requestId": reqID,
+		})
 	}
 
 	accessToken, refreshToken, err := authutils.GenerateTokenPair(userId, email)
