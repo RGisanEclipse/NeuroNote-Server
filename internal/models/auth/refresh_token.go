@@ -2,6 +2,7 @@ package auth
 
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token"`
+	DeviceId     string `json:"deviceId"`
 }
 
 type RefreshTokenResponse struct {

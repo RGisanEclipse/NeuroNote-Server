@@ -31,7 +31,7 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 	}{
 		{
 			name:        "Success_Returns200",
-			requestBody: `{"email":"test@example.com","password":"validPass@1234"}`,
+			requestBody: `{"email":"test@example.com","password":"validPass@1234","deviceId":"validDeviceId"}`,
 			contentType: "application/json",
 			mockReturn: authmodel.ServiceResponse{
 				Success:     true,
@@ -45,7 +45,7 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:        "ServiceError_ReturnsCorrectStatusCode",
-			requestBody: `{"email":"exists@example.com","password":"validPass@1234"}`,
+			requestBody: `{"email":"exists@example.com","password":"validPass@1234","deviceId":"validDeviceId"}`,
 			contentType: "application/json",
 			mockReturn: authmodel.ServiceResponse{
 				Success: false,
@@ -64,7 +64,7 @@ func TestSignupHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:        "WrongContentType_StillProcessesJSON",
-			requestBody: `{"email":"test@example.com","password":"validPass@1234"}`,
+			requestBody: `{"email":"test@example.com","password":"validPass@1234","deviceId":"validDeviceId"}`,
 			contentType: "text/plain",
 			mockReturn: authmodel.ServiceResponse{
 				Success:     true,
@@ -140,7 +140,7 @@ func TestSigninHandler_HTTPConcerns(t *testing.T) {
 	}{
 		{
 			name:        "Success_Returns200",
-			requestBody: `{"email":"user@example.com","password":"ValidPass123@"}`,
+			requestBody: `{"email":"user@example.com","password":"ValidPass123@","deviceId":"validDeviceId"}`,
 			mockReturn: authmodel.ServiceResponse{
 				Success:     true,
 				Message:     "Logged in successfully",
@@ -153,7 +153,7 @@ func TestSigninHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:        "Unauthorized_Returns401",
-			requestBody: `{"email":"user@example.com","password":"wrongPassword1@"}`,
+			requestBody: `{"email":"user@example.com","password":"wrongPassword1@","deviceId":"validDeviceId"}`,
 			mockReturn: authmodel.ServiceResponse{
 				Success: false,
 				Message: appError.AuthIncorrectPassword.Message,
@@ -164,7 +164,7 @@ func TestSigninHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:        "NotFound_Returns404",
-			requestBody: `{"email":"ghost@example.com","password":"randomPassword!2"}`,
+			requestBody: `{"email":"ghost@example.com","password":"randomPassword!2","deviceId":"validDeviceId"}`,
 			mockReturn: authmodel.ServiceResponse{
 				Success: false,
 				Message: appError.AuthEmailDoesntExist.Message,
@@ -230,7 +230,7 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 	}{
 		{
 			name:        "Success_Returns200",
-			requestBody: `{"refresh_token":"valid-refresh-token"}`,
+			requestBody: `{"refresh_token":"valid-refresh-token","deviceId":"validDeviceId"}`,
 			mockReturn: authmodel.RefreshTokenServiceResponse{
 				AccessToken:  "new-access-token",
 				RefreshToken: "new-refresh-token",
@@ -241,7 +241,7 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:           "Unauthorized_Returns401",
-			requestBody:    `{"refresh_token":"invalid-token"}`,
+			requestBody:    `{"refresh_token":"invalid-token","deviceId":"validDeviceId"}`,
 			mockReturn:     authmodel.RefreshTokenServiceResponse{},
 			mockError:      appError.AuthInvalidRefreshToken,
 			expectedStatus: http.StatusUnauthorized,
@@ -249,7 +249,7 @@ func TestRefreshTokenHandler_HTTPConcerns(t *testing.T) {
 		},
 		{
 			name:           "EmptyToken_Returns400",
-			requestBody:    `{"refresh_token":""}`,
+			requestBody:    `{"refresh_token":"","deviceId":"validDeviceId"}`,
 			expectedStatus: http.StatusBadRequest,
 			expectCall:     false,
 		},

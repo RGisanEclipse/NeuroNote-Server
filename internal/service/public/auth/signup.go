@@ -14,7 +14,7 @@ import (
 // It checks if the email is already taken, hashes the password, creates the user
 func (s *signupService) Signup(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code) {
 
-	var email, password = request.Email, request.Password
+	var email, password, deviceId = request.Email, request.Password, request.DeviceID
 
 	exists, err := s.userRepo.UserExists(ctx, email)
 	reqID := requestMiddleware.FromContext(ctx)
@@ -73,7 +73,7 @@ func (s *signupService) Signup(ctx context.Context, request authModels.Request) 
 		}, appError.ServerInternalError
 	}
 
-	if err := s.redisRepo.SetRefreshToken(ctx, userId, refreshToken, RefreshTokenExpiry); err != nil {
+	if err := s.redisRepo.SetRefreshToken(ctx, userId, deviceId, refreshToken, RefreshTokenExpiry); err != nil {
 		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})

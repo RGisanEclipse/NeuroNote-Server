@@ -71,7 +71,7 @@ func NewForgotPasswordService(userRepo userrepo.Repository, otpSvc otpService.S,
 
 type SigninService interface {
 	Signin(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code)
-	RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, *appError.Code)
+	RefreshToken(ctx context.Context, request authModels.RefreshTokenRequest) (authModels.RefreshTokenServiceResponse, *appError.Code)
 }
 
 type SignupService interface {

@@ -90,6 +90,12 @@ func signupHandler(svc authservice.SignupService) http.HandlerFunc {
 			return
 		}
 
+		if req.DeviceID == "" {
+			logger.Warn(appError.ServerInvalidBody.Message, nil, appError.ServerInvalidBody)
+			response.WriteError(w, appError.ServerBadRequest)
+			return
+		}
+
 		res, errCode := svc.Signup(ctx, req)
 		if errCode != nil {
 			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
@@ -141,6 +147,12 @@ func signinHandler(svc authservice.SigninService) http.HandlerFunc {
 			return
 		}
 
+		if req.DeviceID == "" {
+			logger.Warn(appError.ServerInvalidBody.Message, nil, appError.ServerInvalidBody)
+			response.WriteError(w, appError.ServerBadRequest)
+			return
+		}
+
 		res, errCode := svc.Signin(ctx, req)
 		if errCode != nil {
 			logger.Warn(errCode.Message, nil, errCode, logrus.Fields{
@@ -183,7 +195,7 @@ func refreshTokenHandler(svc authservice.SigninService) http.HandlerFunc {
 			return
 		}
 
-		if req.RefreshToken == "" {
+		if req.RefreshToken == "" || req.DeviceId == "" {
 			logger.Warn(appError.ServerBadRequest.Message, nil, appError.ServerBadRequest, logrus.Fields{
 				"requestId": reqID,
 			})
@@ -191,7 +203,7 @@ func refreshTokenHandler(svc authservice.SigninService) http.HandlerFunc {
 			return
 		}
 
-		res, errCode := svc.RefreshToken(ctx, req.RefreshToken)
+		res, errCode := svc.RefreshToken(ctx, req)
 		if errCode != nil {
 			logger.Warn("Refresh token failed", nil, errCode, logrus.Fields{
 				"requestId": reqID,

@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -28,7 +28,7 @@ func InitRedis() error {
 
 	if redisHost == "" || redisPort == "" {
 		err := fmt.Errorf("missing REDIS_HOST or REDIS_PORT environment variables for Redis")
-		logger.Error(appError.RedisConnectionFailed.Message, err,appError.RedisConnectionFailed)
+		logger.Error(appError.RedisConnectionFailed.Message, err, appError.RedisConnectionFailed)
 		return err
 	}
 
@@ -68,23 +68,23 @@ func InitRedis() error {
 	return appError.RedisConnectionFailed
 }
 
-func (r *Repo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
-	key := getRefreshTokenKey(userID)
+func (r *Repo) SetRefreshToken(ctx context.Context, userID, deviceID, token string, expiry time.Duration) error {
+	key := getRefreshTokenKey(userID, deviceID)
 	return r.client.Set(ctx, key, token, expiry).Err()
 }
 
-func (r *Repo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
-	key := getRefreshTokenKey(userID)
+func (r *Repo) GetRefreshToken(ctx context.Context, userID, deviceID string) (string, error) {
+	key := getRefreshTokenKey(userID, deviceID)
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *Repo) DeleteRefreshToken(ctx context.Context, userID string) error {
-	key := getRefreshTokenKey(userID)
+func (r *Repo) DeleteRefreshToken(ctx context.Context, userID, deviceID string) error {
+	key := getRefreshTokenKey(userID, deviceID)
 	return r.client.Del(ctx, key).Err()
 }
 
-func getRefreshTokenKey(userID string) string {
-	return fmt.Sprintf("refresh_token:%s", userID)
+func getRefreshTokenKey(userID, deviceID string) string {
+	return fmt.Sprintf("refresh_token:%s:%s", userID, deviceID)
 }
 
 // SetOTP OTPService Methods

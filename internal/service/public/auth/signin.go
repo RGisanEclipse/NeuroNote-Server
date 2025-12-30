@@ -14,7 +14,7 @@ import (
 // It checks if the user exists, verifies the password, and generates a token.
 func (s *signinService) Signin(ctx context.Context, request authModels.Request) (authModels.ServiceResponse, *appError.Code) {
 
-	var email, password = request.Email, request.Password
+	var email, password, deviceId = request.Email, request.Password, request.DeviceID
 
 	creds, err := s.userRepo.GetUserCreds(ctx, email)
 	reqID := requestMiddleware.FromContext(ctx)
@@ -77,7 +77,7 @@ func (s *signinService) Signin(ctx context.Context, request authModels.Request) 
 		}, appError.ServerInternalError
 	}
 
-	if err := s.redisRepo.SetRefreshToken(ctx, userId, refreshToken, RefreshTokenExpiry); err != nil {
+	if err := s.redisRepo.SetRefreshToken(ctx, userId, deviceId, refreshToken, RefreshTokenExpiry); err != nil {
 		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})

@@ -15,8 +15,8 @@ func (m *MockAuthService) Signin(ctx context.Context, request authmodel.Request)
 	return args.Get(0).(authmodel.ServiceResponse), args.Get(1).(*appError.Code)
 }
 
-func (m *MockAuthService) RefreshToken(ctx context.Context, refreshToken string) (authmodel.RefreshTokenServiceResponse, *appError.Code) {
-	args := m.Called(ctx, refreshToken)
+func (m *MockAuthService) RefreshToken(ctx context.Context, request authmodel.RefreshTokenRequest) (authmodel.RefreshTokenServiceResponse, *appError.Code) {
+	args := m.Called(ctx, request)
 	return args.Get(0).(authmodel.RefreshTokenServiceResponse), args.Get(1).(*appError.Code)
 }
 

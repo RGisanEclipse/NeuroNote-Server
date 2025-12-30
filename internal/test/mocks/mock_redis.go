@@ -9,18 +9,18 @@ import (
 
 type MockRedisRepo struct{ mock.Mock }
 
-func (m *MockRedisRepo) SetRefreshToken(ctx context.Context, userID string, token string, expiry time.Duration) error {
-	args := m.Called(ctx, userID, token, expiry)
+func (m *MockRedisRepo) SetRefreshToken(ctx context.Context, userID, deviceID, token string, expiry time.Duration) error {
+	args := m.Called(ctx, userID, deviceID, token, expiry)
 	return args.Error(0)
 }
 
-func (m *MockRedisRepo) GetRefreshToken(ctx context.Context, userID string) (string, error) {
-	args := m.Called(ctx, userID)
+func (m *MockRedisRepo) GetRefreshToken(ctx context.Context, userID, deviceID string) (string, error) {
+	args := m.Called(ctx, userID, deviceID)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockRedisRepo) DeleteRefreshToken(ctx context.Context, userID string) error {
-	args := m.Called(ctx, userID)
+func (m *MockRedisRepo) DeleteRefreshToken(ctx context.Context, userID, deviceID string) error {
+	args := m.Called(ctx, userID, deviceID)
 	return args.Error(0)
 }
 

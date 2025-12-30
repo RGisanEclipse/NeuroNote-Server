@@ -39,7 +39,7 @@ func TestSignupService_Signup(t *testing.T) {
 				// Mock user creation
 				userRepo.On("CreateUser", mock.Anything, "test@example.com", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true, nil)
 				// Mock token storage
-				redisRepo.On("SetRefreshToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
 				return result.Success &&
@@ -96,7 +96,7 @@ func TestSignupService_Signup(t *testing.T) {
 			mockSetup: func(userRepo *mocks.MockUserRepo, redisRepo *mocks.MockRedisRepo, otpService *mocks.MockOTPService) {
 				userRepo.On("UserExists", mock.Anything, "test@example.com").Return(false, nil)
 				userRepo.On("CreateUser", mock.Anything, "test@example.com", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
+				redisRepo.On("SetRefreshToken", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
 				return !result.Success && result.Message == appError.ServerInternalError.Message

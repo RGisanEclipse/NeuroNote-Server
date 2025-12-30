@@ -42,7 +42,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(true, nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
@@ -66,7 +66,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, nil)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
@@ -90,7 +90,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(nil)
 				// Onboarding check fails - should still succeed with isOnboarded = false
 				onboardingRepo.On("IsOnboardedAlready", mock.Anything, "user123").Return(false, assert.AnError)
 			},
@@ -176,7 +176,7 @@ func TestSigninService_Signin(t *testing.T) {
 				}
 				userRepo.On("GetUserCreds", mock.Anything, "user@example.com").Return(creds, nil)
 				userRepo.On("IsUserVerified", mock.Anything, "user123").Return(true, nil)
-				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
+				redisRepo.On("SetRefreshToken", mock.Anything, "user123", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Duration")).Return(assert.AnError)
 			},
 			expectedResult: func(result authmodel.ServiceResponse) bool {
 				return !result.Success && result.Message == appError.ServerInternalError.Message

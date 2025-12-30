@@ -5,13 +5,16 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	requestMiddleware "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
 	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
 	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
 )
 
-func (s *signinService) RefreshToken(ctx context.Context, refreshToken string) (authModels.RefreshTokenServiceResponse, *appError.Code) {
-	reqID := request.FromContext(ctx)
+func (s *signinService) RefreshToken(ctx context.Context, request authModels.RefreshTokenRequest) (authModels.RefreshTokenServiceResponse, *appError.Code) {
+
+	var refreshToken, deviceId = request.RefreshToken, request.DeviceId
+
+	reqID := requestMiddleware.FromContext(ctx)
 
 	claims, err := authutils.VerifyAuthToken(refreshToken)
 	if err != nil {
@@ -30,7 +33,7 @@ func (s *signinService) RefreshToken(ctx context.Context, refreshToken string) (
 		return authModels.RefreshTokenServiceResponse{}, appError.AuthInvalidRefreshToken
 	}
 
-	storedToken, err := s.redisRepo.GetRefreshToken(ctx, userId)
+	storedToken, err := s.redisRepo.GetRefreshToken(ctx, userId, deviceId)
 	if err != nil || storedToken != refreshToken {
 		logger.Warn(appError.AuthRefreshTokenMismatch.Message, err, appError.AuthRefreshTokenMismatch, logger.Fields{
 			"requestId":     reqID,
@@ -41,7 +44,7 @@ func (s *signinService) RefreshToken(ctx context.Context, refreshToken string) (
 	}
 
 	// Immediately delete the used refresh token to prevent reuse
-	if err := s.redisRepo.DeleteRefreshToken(ctx, userId); err != nil {
+	if err := s.redisRepo.DeleteRefreshToken(ctx, userId, deviceId); err != nil {
 		logger.Error("Failed to delete used refresh token", err, appError.RedisDeleteRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 			"userId":    userId,
@@ -56,7 +59,7 @@ func (s *signinService) RefreshToken(ctx context.Context, refreshToken string) (
 		return authModels.RefreshTokenServiceResponse{}, appError.ServerInternalError
 	}
 
-	if err := s.redisRepo.SetRefreshToken(ctx, userId, newRefreshToken, RefreshTokenExpiry); err != nil {
+	if err := s.redisRepo.SetRefreshToken(ctx, userId, deviceId, newRefreshToken, RefreshTokenExpiry); err != nil {
 		logger.Error(appError.RedisSetRefreshTokenFailed.Message, err, appError.RedisSetRefreshTokenFailed, logger.Fields{
 			"requestId": reqID,
 		})
