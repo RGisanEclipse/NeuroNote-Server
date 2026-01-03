@@ -95,6 +95,11 @@ const (
 	obUserAlreadyOnboarded = "OB_005"
 )
 
+// Mood errors (md*)
+const (
+	mdInvaliMood = "MD_001"
+)
+
 // Redis errors (redis*)
 const (
 	redisConnectionFailed             = "REDIS_001"
@@ -191,6 +196,8 @@ var (
 	OBInvalidGender        = NewErrorCode(obInvalidGender, "invalid gender", http.StatusBadRequest)
 	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusConflict)
 
+	MDInvalidMood = NewErrorCode(mdInvaliMood, "invalid mood", http.StatusBadRequest)
+
 	RedisConnectionFailed             = NewErrorCode(redisConnectionFailed, "failed to connect to Redis", http.StatusInternalServerError)
 	RedisSetRefreshTokenFailed        = NewErrorCode(redisSetRefreshTokenFailed, "failed to set refresh token", http.StatusInternalServerError)
 	RedisGetRefreshTokenFailed        = NewErrorCode(redisGetRefreshTokenFailed, "failed to get refresh token", http.StatusInternalServerError)
@@ -225,96 +232,3 @@ var (
 	ServerRequestDeliveryFailure = NewErrorCode(serverRequestDeliveryFailure, "failed to send Brevo request", http.StatusInternalServerError)
 	ServerNon200ResponseError    = NewErrorCode(serverNon200ResponseError, "received non-200 response from API", http.StatusBadGateway)
 )
-
-// GetErrorByCode maps string codes to ErrorCode objects
-func GetErrorByCode(code string) (*Code, bool) {
-	errorMap := map[string]*Code{
-		// Authentication
-		authEmailDoesntExist:       AuthEmailDoesntExist,
-		authEmailExists:            AuthEmailExists,
-		authIncorrectPassword:      AuthIncorrectPassword,
-		authInvalidBody:            AuthInvalidBody,
-		authUserIDGenerationFailed: AuthUserIDGenerationFailed,
-		authPasswordHashingFailed:  AuthPasswordHashingFailed,
-		authTokenGenerationFailed:  AuthTokenGenerationFailed,
-		authTokenInvalid:           AuthTokenInvalid,
-		authUnauthorized:           AuthUnauthorized,
-		authUserNotFound:           AuthUserNotFound,
-		authInvalidRefreshToken:    AuthInvalidRefreshToken,
-		authRefreshTokenMismatch:   AuthRefreshTokenMismatch,
-		authInternalServiceError:   AuthInternalServiceError,
-		authOtpSendFailure:         AuthOtpSendFailure,
-		authOtpVerificationFailure: AuthOtpVerificationFailure,
-		authPasswordOtpNotVerified: AuthPasswordOtpNotVerified,
-		authUserNotVerified:        AuthUserNotVerified,
-
-		// Email validation
-		emailRequired: EmailRequired,
-		emailInvalid:  EmailInvalid,
-
-		// Password validation
-		passwordRequired:           PasswordRequired,
-		passwordTooShort:           PasswordTooShort,
-		passwordTooLong:            PasswordTooLong,
-		passwordMissingUppercase:   PasswordMissingUppercase,
-		passwordMissingLowercase:   PasswordMissingLowercase,
-		passwordMissingDigit:       PasswordMissingDigit,
-		passwordMissingSpecialChar: PasswordMissingSpecialChar,
-		passwordContainsWhitespace: PasswordContainsWhitespace,
-
-		// Database
-		dbConnectionFailed:   DBConnectionFailed,
-		dbQueryFailed:        DBQueryFailed,
-		dbInsertFailed:       DBInsertFailed,
-		dbUpdateFailed:       DBUpdateFailed,
-		dbUserCreationFailed: DBUserCreationFailed,
-		dbUserQueryFailed:    DBUserQueryFailed,
-		dbEmailQueryFailed:   DBEmailQueryFailed,
-
-		// Onboarding
-		obNameTooLong:          OBNameTooLong,
-		obNameTooShort:         OBNameTooShort,
-		obInvalidAge:           OBInvalidAge,
-		obInvalidGender:        OBInvalidGender,
-		obUserAlreadyOnboarded: OBUserAlreadyOnboarded,
-
-		// Redis
-		redisConnectionFailed:             RedisConnectionFailed,
-		redisSetRefreshTokenFailed:        RedisSetRefreshTokenFailed,
-		redisGetRefreshTokenFailed:        RedisGetRefreshTokenFailed,
-		redisDeleteRefreshTokenFailed:     RedisDeleteRefreshTokenFailed,
-		redisGetOtpFailed:                 RedisGetOtpFailed,
-		redisSetPasswordResetKeyFailed:    RedisSetPasswordResetKeyFailed,
-		redisDeletePasswordResetKeyFailed: RedisDeletePasswordResetKeyFailed,
-
-		// OTP
-		otpInvalidRequest:    OtpInvalidRequest,
-		otpEmptyEmailForUser: OtpEmptyEmailForUser,
-		otpExpiredOrNotFound: OtpExpiredOrNotFound,
-		otpInvalid:           OtpInvalid,
-		otpInvalidPurpose:    OtpInvalidPurpose,
-		otpCodeMissing:       OtpCodeMissing,
-
-		// Phoenix
-		phoenixEmailDeliveryFailed: PhoenixEmailDeliveryFailed,
-
-		// Server
-		serverMissingEnvVars:         ServerMissingEnvVars,
-		serverStartupFailed:          ServerStartupFailed,
-		serverShutdownFailed:         ServerShutdownFailed,
-		serverInternalError:          ServerInternalError,
-		serverInvalidBody:            ServerInvalidBody,
-		serverTooManyRequests:        ServerTooManyRequests,
-		serverHTTPServerError:        ServerHTTPServerError,
-		serverBadRequest:             ServerBadRequest,
-		serverUnauthorized:           ServerUnauthorized,
-		serverJSONMarshalError:       ServerJSONMarshalError,
-		serverJSONUnmarshalError:     ServerJSONUnmarshalError,
-		serverRequestCreationFailure: ServerRequestCreationFailure,
-		serverRequestDeliveryFailure: ServerRequestDeliveryFailure,
-		serverNon200ResponseError:    ServerNon200ResponseError,
-	}
-
-	err, exists := errorMap[code]
-	return err, exists
-}
