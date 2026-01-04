@@ -3,7 +3,6 @@ package mood
 import (
 	"context"
 	"strings"
-	"time"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
@@ -35,16 +34,16 @@ func (s *service) LogMood(ctx context.Context, userId string, request model.Requ
 	}
 
 	entry := model.Entry{
-		ID:        uuid.New().String(),
-		UserID:    userId,
-		Mood:      model.Type(mood),
-		Reason:    reasonPtr,
-		CreatedAt: time.Now().UTC(),
+		ID:     uuid.New().String(),
+		UserID: userId,
+		Mood:   model.Type(mood),
+		Reason: reasonPtr,
 	}
 
 	err := s.moodRepo.SaveMood(ctx, entry)
 
 	if err != nil {
+		logFields["error"] = err.Error()
 		logger.Error(appError.DBInsertFailed.Message, appError.DBInsertFailed, appError.DBInsertFailed, logFields)
 		return false, appError.ServerInternalError
 	}

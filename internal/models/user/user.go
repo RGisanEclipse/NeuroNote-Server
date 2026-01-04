@@ -6,6 +6,7 @@ type Model struct {
 	PasswordHash string `gorm:"size:255;not null"`
 	IsVerified   bool   `gorm:"not null;default:false"`
 	CreatedAt    int64  `gorm:"autoCreateTime"`
+	DeletedAt    *int64 `gorm:"index"`
 }
 
 func (Model) TableName() string {
