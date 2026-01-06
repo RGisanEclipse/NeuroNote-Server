@@ -10,6 +10,7 @@ import (
 
 type Service interface {
 	LogMood(ctx context.Context, userId string, request mood.Request) (bool, *appError.Code)
+	GetMood(ctx context.Context, userId string, days int) ([]mood.Entry, *appError.Code)
 }
 
 type service struct {

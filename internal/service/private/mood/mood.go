@@ -3,6 +3,7 @@ package mood
 import (
 	"context"
 	"strings"
+	"time"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
@@ -51,4 +52,31 @@ func (s *service) LogMood(ctx context.Context, userId string, request model.Requ
 	logger.Info("Mood Logged Successfully", logFields)
 
 	return true, nil
+}
+
+func (s *service) GetMood(ctx context.Context, userId string, days int) ([]model.Entry, *appError.Code) {
+	requestId := requestMiddleWare.FromContext(ctx)
+
+	logFields := logger.Fields{
+		"userId":    userId,
+		"requestId": requestId,
+		"days":      days,
+	}
+
+	if days <= 0 {
+		logger.Warn(appError.ServerBadRequest.Message, nil, appError.ServerBadRequest, logFields)
+		return nil, appError.ServerBadRequest
+	}
+
+	from := time.Now().AddDate(0, 0, -days)
+
+	entries, err := s.moodRepo.GetMoodByDuration(ctx, userId, from)
+	if err != nil {
+		logFields["error"] = err.Error()
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logFields)
+		return nil, appError.ServerInternalError
+	}
+
+	logger.Info("Mood fetched successfully", logFields)
+	return entries, nil
 }
