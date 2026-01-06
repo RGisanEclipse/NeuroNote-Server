@@ -64,8 +64,8 @@ func (s *service) GetMood(ctx context.Context, userId string, days int) ([]model
 	}
 
 	if days <= 0 {
-		logger.Warn(appError.ServerBadRequest.Message, nil, appError.ServerBadRequest, logFields)
-		return nil, appError.ServerBadRequest
+		logger.Warn(appError.MDInvalidDaysRange.Message, nil, appError.MDInvalidDaysRange, logFields)
+		return nil, appError.MDInvalidDaysRange
 	}
 
 	from := time.Now().AddDate(0, 0, -days)

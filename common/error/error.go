@@ -97,7 +97,8 @@ const (
 
 // Mood errors (md*)
 const (
-	mdInvaliMood = "MD_001"
+	mdInvaliMood       = "MD_001"
+	mdInvalidDaysRange = "MD_002"
 )
 
 // Redis errors (redis*)
@@ -196,7 +197,8 @@ var (
 	OBInvalidGender        = NewErrorCode(obInvalidGender, "invalid gender", http.StatusBadRequest)
 	OBUserAlreadyOnboarded = NewErrorCode(obUserAlreadyOnboarded, "user already onboarded", http.StatusConflict)
 
-	MDInvalidMood = NewErrorCode(mdInvaliMood, "invalid mood", http.StatusBadRequest)
+	MDInvalidMood      = NewErrorCode(mdInvaliMood, "invalid mood", http.StatusBadRequest)
+	MDInvalidDaysRange = NewErrorCode(mdInvalidDaysRange, "invalid range of days added, could be lower or equal to zero", http.StatusBadRequest)
 
 	RedisConnectionFailed             = NewErrorCode(redisConnectionFailed, "failed to connect to Redis", http.StatusInternalServerError)
 	RedisSetRefreshTokenFailed        = NewErrorCode(redisSetRefreshTokenFailed, "failed to set refresh token", http.StatusInternalServerError)
