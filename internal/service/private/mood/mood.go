@@ -68,7 +68,7 @@ func (s *service) GetMood(ctx context.Context, userId string, days int) ([]model
 		return nil, appError.MDInvalidDaysRange
 	}
 
-	from := time.Now().AddDate(0, 0, -days)
+	from := time.Now().AddDate(0, 0, -days).Unix()
 
 	entries, err := s.moodRepo.GetMoodByDuration(ctx, userId, from)
 	if err != nil {

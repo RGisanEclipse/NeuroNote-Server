@@ -22,4 +22,3 @@ func (m *MockMoodService) GetMood(ctx context.Context, userId string, days int) 
 	}
 	return args.Get(0).([]mood.Entry), args.Get(1).(*appError.Code)
 }
-

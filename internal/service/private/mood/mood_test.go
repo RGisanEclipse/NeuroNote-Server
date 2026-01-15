@@ -197,3 +197,73 @@ func TestService_LogMood(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetMood(t *testing.T) {
+	reason := mood.ReasonType("achievement")
+	entries := []mood.Entry{
+		{
+			ID:        "entry-1",
+			UserID:    "user1234567890",
+			Mood:      mood.Type("happy"),
+			Reason:    &reason,
+			CreatedAt: 1700000000,
+		},
+	}
+
+	tests := []struct {
+		name          string
+		userId        string
+		days          int
+		mockSetup     func(*mocks.MockMoodRepo)
+		expectedData  []mood.Entry
+		expectedError *appError.Code
+	}{
+		{
+			name:   "Success_WithEntries",
+			userId: "user1234567890",
+			days:   7,
+			mockSetup: func(moodRepo *mocks.MockMoodRepo) {
+				moodRepo.On("GetMoodByDuration", mock.Anything, "user1234567890", mock.AnythingOfType("int64")).Return(entries, nil)
+			},
+			expectedData:  entries,
+			expectedError: mocks.NoError(),
+		},
+		{
+			name:   "ValidationError_InvalidDays",
+			userId: "user1234567890",
+			days:   0,
+			mockSetup: func(moodRepo *mocks.MockMoodRepo) {
+				// No repo calls expected
+			},
+			expectedData:  nil,
+			expectedError: appError.MDInvalidDaysRange,
+		},
+		{
+			name:   "DatabaseError",
+			userId: "user1234567890",
+			days:   7,
+			mockSetup: func(moodRepo *mocks.MockMoodRepo) {
+				moodRepo.On("GetMoodByDuration", mock.Anything, "user1234567890", mock.AnythingOfType("int64")).Return(nil, assert.AnError)
+			},
+			expectedData:  nil,
+			expectedError: appError.ServerInternalError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			moodRepo := new(mocks.MockMoodRepo)
+
+			tt.mockSetup(moodRepo)
+
+			service := NewService(moodRepo)
+
+			result, errCode := service.GetMood(context.Background(), tt.userId, tt.days)
+
+			assert.Equal(t, tt.expectedData, result)
+			assert.Equal(t, tt.expectedError, errCode)
+
+			moodRepo.AssertExpectations(t)
+		})
+	}
+}

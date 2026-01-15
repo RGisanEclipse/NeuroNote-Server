@@ -14,10 +14,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// RegisterMoodRoutes registers all onboarding-related routes.
+// RegisterMoodRoutes registers all mood-related routes.
 func RegisterMoodRoutes(router *mux.Router, svc moodService.Service) {
 	router.HandleFunc("/api/v1/mood", moodLogHandler(svc)).Methods("POST")
-	router.HandleFunc("/api/v1/mood/entries", getMoodHandler(svc)).Methods("GET")
+	router.HandleFunc("/api/v1/mood/entries", getMoodHandler(svc)).Methods("POST")
 }
 
 func moodLogHandler(svc moodService.Service) http.HandlerFunc {
