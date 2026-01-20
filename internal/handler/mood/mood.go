@@ -64,6 +64,7 @@ func moodLogHandler(svc moodService.Service) http.HandlerFunc {
 		}
 	}
 }
+
 func getMoodHandler(svc moodService.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

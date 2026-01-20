@@ -6,6 +6,7 @@ import (
 	onboardingRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/onboarding"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/atlas"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/mood"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/onboarding"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
@@ -17,6 +18,7 @@ type Services struct {
 	Phoenix    phoenixservice.Service
 	Onboarding onboarding.Service
 	Mood       mood.Service
+	Atlas      atlas.Service
 }
 
 func New() *Services {
@@ -34,10 +36,13 @@ func New() *Services {
 	otpService := otp.New(userrepo, redisRepo, phoenixService)
 	onboardingService := onboarding.NewService(userrepo, onboardingrepo)
 	moodService := mood.NewService(moodrepo)
+	atlasService := atlas.NewService(moodrepo)
+
 	return &Services{
 		OTP:        otpService,
 		Phoenix:    phoenixService,
 		Onboarding: onboardingService,
 		Mood:       moodService,
+		Atlas:      atlasService,
 	}
 }
