@@ -4,20 +4,16 @@ import (
 	"context"
 
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/nova"
 )
 
-type MoodReader interface {
-	GetMoodByDuration(ctx context.Context, userId string, from int64) ([]mood.Entry, error)
-}
-
 type service struct {
-	moodReader MoodReader
+	nova nova.Service
 }
 
-func NewService(moodReader MoodReader) Service {
+func NewService(novaService nova.Service) Service {
 	return &service{
-		moodReader: moodReader,
+		nova: novaService,
 	}
 }
 

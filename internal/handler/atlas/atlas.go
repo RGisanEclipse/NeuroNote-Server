@@ -160,8 +160,8 @@ func dashboardAPIHandler(svc atlasService.Service) http.HandlerFunc {
 
 		logger.Info("Dashboard data fetched successfully", logFields)
 		response.WriteSuccess(w, map[string]interface{}{
-			"weeklyMoodStrip":  weekly.Data,
-			"monthlyTopMoods":  monthly.Data,
+			"weeklyMoodStrip": weekly.Data,
+			"monthlyTopMoods": monthly.Data,
 		})
 	}
 }
