@@ -24,3 +24,11 @@ func (m *MockAtlasService) GetMonthlyTopMoodsData(ctx context.Context, request a
 	}
 	return args.Get(0).(*atlas.MoodTop3Response), args.Error(1)
 }
+
+func (m *MockAtlasService) GetDashboardData(ctx context.Context, request atlas.MoodTrendRequest) (*atlas.DashboardResponse, error) {
+	args := m.Called(ctx, request)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*atlas.DashboardResponse), args.Error(1)
+}

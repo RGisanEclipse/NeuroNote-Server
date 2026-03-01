@@ -20,4 +20,5 @@ func NewService(novaService nova.Service) Service {
 type Service interface {
 	GetWeeklyMoodStripData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTrendResponse, error)
 	GetMonthlyTopMoodsData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTop3Response, error)
+	GetDashboardData(ctx context.Context, request model.MoodTrendRequest) (*model.DashboardResponse, error)
 }

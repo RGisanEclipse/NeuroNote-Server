@@ -1,6 +1,7 @@
 package atlas
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -134,34 +135,23 @@ func dashboardAPIHandler(svc atlasService.Service) http.HandlerFunc {
 			TimeZone: *time.UTC,
 		}
 
-		weekly, weeklyErr := svc.GetWeeklyMoodStripData(ctx, req)
-		if weeklyErr != nil {
-			if appErr, ok := weeklyErr.(*appError.Code); ok {
+		data, svcErr := svc.GetDashboardData(ctx, req)
+		if svcErr != nil {
+			var appErr *appError.Code
+			if errors.As(svcErr, &appErr) {
 				logger.Warn(appErr.Message, nil, appErr, logFields)
 				response.WriteError(w, appErr)
 				return
 			}
-			logger.Error(appError.ServerInternalError.Message, weeklyErr, appError.ServerInternalError, logFields)
-			response.WriteError(w, appError.ServerInternalError)
-			return
-		}
-
-		monthly, monthlyErr := svc.GetMonthlyTopMoodsData(ctx, req)
-		if monthlyErr != nil {
-			if appErr, ok := monthlyErr.(*appError.Code); ok {
-				logger.Warn(appErr.Message, nil, appErr, logFields)
-				response.WriteError(w, appErr)
-				return
-			}
-			logger.Error(appError.ServerInternalError.Message, monthlyErr, appError.ServerInternalError, logFields)
+			logger.Error(appError.ServerInternalError.Message, svcErr, appError.ServerInternalError, logFields)
 			response.WriteError(w, appError.ServerInternalError)
 			return
 		}
 
 		logger.Info("Dashboard data fetched successfully", logFields)
 		response.WriteSuccess(w, map[string]interface{}{
-			"weeklyMoodStrip": weekly.Data,
-			"monthlyTopMoods": monthly.Data,
+			"weeklyMoodStrip": data.WeeklyMoodStrip,
+			"monthlyTopMoods": data.MonthlyTopMoods,
 		})
 	}
 }

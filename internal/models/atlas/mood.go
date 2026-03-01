@@ -35,3 +35,8 @@ type MoodPercentage struct {
 type MoodTop3Response struct {
 	Data []MoodPercentage `json:"data"`
 }
+
+type DashboardResponse struct {
+	WeeklyMoodStrip map[string]*mood.Type `json:"weeklyMoodStrip"`
+	MonthlyTopMoods []MoodPercentage      `json:"monthlyTopMoods"`
+}

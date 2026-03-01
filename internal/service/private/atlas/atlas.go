@@ -35,3 +35,18 @@ func (s *service) GetMonthlyTopMoodsData(ctx context.Context, request model.Mood
 
 	return s.nova.GetTopMoods(ctx, request, 3)
 }
+
+func (s *service) GetDashboardData(ctx context.Context, request model.MoodTrendRequest) (*model.DashboardResponse, error) {
+	weekly, weeklyErr := s.GetWeeklyMoodStripData(ctx, request)
+	monthly, monthlyErr := s.GetMonthlyTopMoodsData(ctx, request)
+
+	resp := &model.DashboardResponse{}
+	if weeklyErr == nil && weekly != nil {
+		resp.WeeklyMoodStrip = weekly.Data
+	}
+	if monthlyErr == nil && monthly != nil {
+		resp.MonthlyTopMoods = monthly.Data
+	}
+
+	return resp, nil
+}
