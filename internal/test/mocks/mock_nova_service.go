@@ -3,6 +3,7 @@ package mocks
 import (
 	"context"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 )
 
@@ -15,16 +16,16 @@ type NovaTopCall struct {
 // MockNovaService is a simple, stateful implementation of nova.Service used for tests.
 type MockNovaService struct {
 	TrendResponse *model.MoodTrendResponse
-	TrendErr      error
+	TrendErr      *appError.Code
 
 	TopResponse *model.MoodTop3Response
-	TopErr      error
+	TopErr      *appError.Code
 
 	TrendCalls []model.MoodTrendRequest
 	TopCalls   []NovaTopCall
 }
 
-func (m *MockNovaService) GetMoodTrend(ctx context.Context, req model.MoodTrendRequest) (*model.MoodTrendResponse, error) {
+func (m *MockNovaService) GetMoodTrend(ctx context.Context, req model.MoodTrendRequest) (*model.MoodTrendResponse, *appError.Code) {
 	m.TrendCalls = append(m.TrendCalls, req)
 	if m.TrendErr != nil {
 		return nil, m.TrendErr
@@ -32,7 +33,7 @@ func (m *MockNovaService) GetMoodTrend(ctx context.Context, req model.MoodTrendR
 	return m.TrendResponse, nil
 }
 
-func (m *MockNovaService) GetTopMoods(ctx context.Context, req model.MoodTrendRequest, limit int) (*model.MoodTop3Response, error) {
+func (m *MockNovaService) GetTopMoods(ctx context.Context, req model.MoodTrendRequest, limit int) (*model.MoodTop3Response, *appError.Code) {
 	m.TopCalls = append(m.TopCalls, NovaTopCall{
 		Req:   req,
 		Limit: limit,

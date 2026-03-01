@@ -1,7 +1,6 @@
 package atlas
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -47,15 +46,10 @@ func weeklyMoodStripHandler(svc atlasService.Service) http.HandlerFunc {
 			TimeZone: *time.UTC,
 		}
 
-		data, svcErr := svc.GetWeeklyMoodStripData(ctx, req)
-		if svcErr != nil {
-			if appErr, ok := svcErr.(*appError.Code); ok {
-				logger.Warn(appErr.Message, nil, appErr, logFields)
-				response.WriteError(w, appErr)
-				return
-			}
-			logger.Error(appError.ServerInternalError.Message, svcErr, appError.ServerInternalError, logFields)
-			response.WriteError(w, appError.ServerInternalError)
+		data, errCode := svc.GetWeeklyMoodStripData(ctx, req)
+		if errCode != nil {
+			logger.Warn(errCode.Message, nil, errCode, logFields)
+			response.WriteError(w, errCode)
 			return
 		}
 
@@ -91,15 +85,10 @@ func monthlyTopMoodsHandler(svc atlasService.Service) http.HandlerFunc {
 			TimeZone: *time.UTC,
 		}
 
-		data, svcErr := svc.GetMonthlyTopMoodsData(ctx, req)
-		if svcErr != nil {
-			if appErr, ok := svcErr.(*appError.Code); ok {
-				logger.Warn(appErr.Message, nil, appErr, logFields)
-				response.WriteError(w, appErr)
-				return
-			}
-			logger.Error(appError.ServerInternalError.Message, svcErr, appError.ServerInternalError, logFields)
-			response.WriteError(w, appError.ServerInternalError)
+		data, errCode := svc.GetMonthlyTopMoodsData(ctx, req)
+		if errCode != nil {
+			logger.Warn(errCode.Message, nil, errCode, logFields)
+			response.WriteError(w, errCode)
 			return
 		}
 
@@ -117,11 +106,6 @@ func dashboardAPIHandler(svc atlasService.Service) http.HandlerFunc {
 
 		userId, ok := ctx.Value(user.UserIdKey).(string)
 
-		logFields := logger.Fields{
-			"userId":    userId,
-			"requestId": reqID,
-		}
-
 		if !ok || userId == "" {
 			logger.Warn("User ID not found in context", nil, appError.AuthUnauthorized, logger.Fields{
 				"requestId": reqID,
@@ -135,20 +119,7 @@ func dashboardAPIHandler(svc atlasService.Service) http.HandlerFunc {
 			TimeZone: *time.UTC,
 		}
 
-		data, svcErr := svc.GetDashboardData(ctx, req)
-		if svcErr != nil {
-			var appErr *appError.Code
-			if errors.As(svcErr, &appErr) {
-				logger.Warn(appErr.Message, nil, appErr, logFields)
-				response.WriteError(w, appErr)
-				return
-			}
-			logger.Error(appError.ServerInternalError.Message, svcErr, appError.ServerInternalError, logFields)
-			response.WriteError(w, appError.ServerInternalError)
-			return
-		}
-
-		logger.Info("Dashboard data fetched successfully", logFields)
+		data, _ := svc.GetDashboardData(ctx, req)
 		response.WriteSuccess(w, map[string]interface{}{
 			"weeklyMoodStrip": data.WeeklyMoodStrip,
 			"monthlyTopMoods": data.MonthlyTopMoods,

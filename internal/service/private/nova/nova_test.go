@@ -90,16 +90,13 @@ func TestService_GetMoodTrend(t *testing.T) {
 			got, err := svc.GetMoodTrend(context.Background(), tt.request)
 
 			if tt.wantErr != nil {
-				assert.Error(t, err)
-				appErr, ok := err.(*appError.Code)
-				if assert.True(t, ok, "error should be of type *appError.Code") {
-					assert.Equal(t, tt.wantErr.Code, appErr.Code)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantErr.Code, err.Code)
 				assert.Nil(t, got)
 				return
 			}
 
-			assert.NoError(t, err)
+			assert.Nil(t, err)
 			if assert.NotNil(t, got) {
 				assert.Equal(t, len(tt.wantData), len(got.Data))
 				for day, expectedMood := range tt.wantData {
@@ -216,16 +213,13 @@ func TestService_GetTopMoods(t *testing.T) {
 			got, err := svc.GetTopMoods(context.Background(), tt.request, tt.limit)
 
 			if tt.wantErr != nil {
-				assert.Error(t, err)
-				appErr, ok := err.(*appError.Code)
-				if assert.True(t, ok, "error should be of type *appError.Code") {
-					assert.Equal(t, tt.wantErr.Code, appErr.Code)
-				}
+				assert.NotNil(t, err)
+				assert.Equal(t, tt.wantErr.Code, err.Code)
 				assert.Nil(t, got)
 				return
 			}
 
-			assert.NoError(t, err)
+			assert.Nil(t, err)
 			if tt.expectEmpty {
 				assert.NotNil(t, got)
 				assert.Len(t, got.Data, 0)

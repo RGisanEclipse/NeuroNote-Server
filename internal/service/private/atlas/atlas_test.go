@@ -2,10 +2,10 @@ package atlas
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
@@ -26,7 +26,7 @@ func TestService_GetWeeklyMoodStripData(t *testing.T) {
 	tests := []struct {
 		name      string
 		req       model.MoodTrendRequest
-		mockErr   error
+		mockErr   *appError.Code
 		wantErr   bool
 		wantResp  *model.MoodTrendResponse
 		wantCalls int
@@ -48,7 +48,7 @@ func TestService_GetWeeklyMoodStripData(t *testing.T) {
 				UserId:   userID,
 				TimeZone: tz,
 			},
-			mockErr:   errors.New("nova error"),
+			mockErr:   appError.ServerInternalError,
 			wantErr:   true,
 			wantResp:  nil,
 			wantCalls: 1,
@@ -68,10 +68,10 @@ func TestService_GetWeeklyMoodStripData(t *testing.T) {
 			resp, err := svc.GetWeeklyMoodStripData(context.Background(), tt.req)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				assert.NotNil(t, err)
 				assert.Nil(t, resp)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 				assert.Equal(t, tt.wantResp, resp)
 			}
 
@@ -102,7 +102,7 @@ func TestService_GetMonthlyTopMoodsData(t *testing.T) {
 	tests := []struct {
 		name      string
 		req       model.MoodTrendRequest
-		mockErr   error
+		mockErr   *appError.Code
 		wantErr   bool
 		wantResp  *model.MoodTop3Response
 		wantCalls int
@@ -126,7 +126,7 @@ func TestService_GetMonthlyTopMoodsData(t *testing.T) {
 				UserId:   userID,
 				TimeZone: tz,
 			},
-			mockErr:   errors.New("nova error"),
+			mockErr:   appError.ServerInternalError,
 			wantErr:   true,
 			wantResp:  nil,
 			wantCalls: 1,
@@ -147,10 +147,10 @@ func TestService_GetMonthlyTopMoodsData(t *testing.T) {
 			resp, err := svc.GetMonthlyTopMoodsData(context.Background(), tt.req)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				assert.NotNil(t, err)
 				assert.Nil(t, resp)
 			} else {
-				assert.NoError(t, err)
+				assert.Nil(t, err)
 				assert.Equal(t, tt.wantResp, resp)
 			}
 

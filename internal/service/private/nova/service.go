@@ -60,7 +60,7 @@ func (s *service) getEntriesForRange(ctx context.Context, request model.MoodTren
 }
 
 // GetMoodTrend computes the dominant mood per day in the requested range.
-func (s *service) GetMoodTrend(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTrendResponse, error) {
+func (s *service) GetMoodTrend(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTrendResponse, *appError.Code) {
 	entries, tz, startOfDay, _, days, rangeErr := s.getEntriesForRange(ctx, request)
 	if rangeErr != nil {
 		return nil, rangeErr
@@ -116,7 +116,7 @@ func (s *service) GetMoodTrend(ctx context.Context, request model.MoodTrendReque
 }
 
 // GetTopMoods computes the top N moods by percentage within the requested range.
-func (s *service) GetTopMoods(ctx context.Context, request model.MoodTrendRequest, limit int) (*model.MoodTop3Response, error) {
+func (s *service) GetTopMoods(ctx context.Context, request model.MoodTrendRequest, limit int) (*model.MoodTop3Response, *appError.Code) {
 	if limit <= 0 {
 		limit = 3
 	}

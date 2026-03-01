@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 )
 
-func (s *service) GetWeeklyMoodStripData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTrendResponse, error) {
+func (s *service) GetWeeklyMoodStripData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTrendResponse, *appError.Code) {
 	tz := &request.TimeZone
 	if request.TimeZone.String() == "" {
 		tz = time.UTC
@@ -22,7 +23,7 @@ func (s *service) GetWeeklyMoodStripData(ctx context.Context, request model.Mood
 	return s.nova.GetMoodTrend(ctx, request)
 }
 
-func (s *service) GetMonthlyTopMoodsData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTop3Response, error) {
+func (s *service) GetMonthlyTopMoodsData(ctx context.Context, request model.MoodTrendRequest) (*model.MoodTop3Response, *appError.Code) {
 	tz := &request.TimeZone
 	if request.TimeZone.String() == "" {
 		tz = time.UTC
@@ -36,7 +37,7 @@ func (s *service) GetMonthlyTopMoodsData(ctx context.Context, request model.Mood
 	return s.nova.GetTopMoods(ctx, request, 3)
 }
 
-func (s *service) GetDashboardData(ctx context.Context, request model.MoodTrendRequest) (*model.DashboardResponse, error) {
+func (s *service) GetDashboardData(ctx context.Context, request model.MoodTrendRequest) (*model.DashboardResponse, *appError.Code) {
 	weekly, weeklyErr := s.GetWeeklyMoodStripData(ctx, request)
 	monthly, monthlyErr := s.GetMonthlyTopMoodsData(ctx, request)
 
