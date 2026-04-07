@@ -123,6 +123,7 @@ func dashboardAPIHandler(svc atlasService.Service) http.HandlerFunc {
 		response.WriteSuccess(w, map[string]interface{}{
 			"weeklyMoodStrip": data.WeeklyMoodStrip,
 			"monthlyTopMoods": data.MonthlyTopMoods,
+			"streakWidget":    data.Streak,
 		})
 	}
 }

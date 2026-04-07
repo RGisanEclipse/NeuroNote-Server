@@ -8,6 +8,7 @@ import (
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
 	requestMiddleWare "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
+	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
 )
@@ -189,4 +190,42 @@ func (s *service) GetTopMoods(ctx context.Context, request model.MoodTrendReques
 	})
 
 	return &model.MoodTop3Response{Data: result}, nil
+}
+
+// GetStreakData returns the current and longest streak for a user.
+func (s *service) GetStreakData(ctx context.Context, userID string) (*activityModel.StreakResponse, *appError.Code) {
+	streak, err := s.activityReader.GetStreak(ctx, userID)
+	if err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{"userId": userID})
+		return nil, appError.ServerInternalError
+	}
+
+	if streak == nil {
+		return &activityModel.StreakResponse{}, nil
+	}
+
+	return &activityModel.StreakResponse{
+		CurrentStreak:  streak.CurrentStreak,
+		LongestStreak:  streak.LongestStreak,
+		LastActiveDate: streak.LastActiveDate,
+	}, nil
+}
+
+// GetActivityStats returns the number of active days and total visits in a date range.
+func (s *service) GetActivityStats(ctx context.Context, userID string, from int64, to int64) (*activityModel.StatsResponse, *appError.Code) {
+	entries, err := s.activityReader.GetActivityByRange(ctx, userID, from, to)
+	if err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{"userId": userID})
+		return nil, appError.ServerInternalError
+	}
+
+	totalVisits := 0
+	for _, e := range entries {
+		totalVisits += e.VisitCount
+	}
+
+	return &activityModel.StatsResponse{
+		ActiveDays:  len(entries),
+		TotalVisits: totalVisits,
+	}, nil
 }

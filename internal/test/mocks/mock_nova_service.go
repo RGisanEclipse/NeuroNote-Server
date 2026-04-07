@@ -4,6 +4,7 @@ import (
 	"context"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 )
 
@@ -20,6 +21,12 @@ type MockNovaService struct {
 
 	TopResponse *model.MoodTop3Response
 	TopErr      *appError.Code
+
+	StreakResponse *activityModel.StreakResponse
+	StreakErr      *appError.Code
+
+	StatsResponse *activityModel.StatsResponse
+	StatsErr      *appError.Code
 
 	TrendCalls []model.MoodTrendRequest
 	TopCalls   []NovaTopCall
@@ -42,4 +49,18 @@ func (m *MockNovaService) GetTopMoods(ctx context.Context, req model.MoodTrendRe
 		return nil, m.TopErr
 	}
 	return m.TopResponse, nil
+}
+
+func (m *MockNovaService) GetStreakData(ctx context.Context, userID string) (*activityModel.StreakResponse, *appError.Code) {
+	if m.StreakErr != nil {
+		return nil, m.StreakErr
+	}
+	return m.StreakResponse, nil
+}
+
+func (m *MockNovaService) GetActivityStats(ctx context.Context, userID string, from int64, to int64) (*activityModel.StatsResponse, *appError.Code) {
+	if m.StatsErr != nil {
+		return nil, m.StatsErr
+	}
+	return m.StatsResponse, nil
 }

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
+	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 )
 
@@ -38,8 +40,11 @@ func (s *service) GetMonthlyTopMoodsData(ctx context.Context, request model.Mood
 }
 
 func (s *service) GetDashboardData(ctx context.Context, request model.MoodTrendRequest) (*model.DashboardResponse, *appError.Code) {
+	s.recordActivity(ctx, request.UserId)
+
 	weekly, weeklyErr := s.GetWeeklyMoodStripData(ctx, request)
 	monthly, monthlyErr := s.GetMonthlyTopMoodsData(ctx, request)
+	streak, _ := s.nova.GetStreakData(ctx, request.UserId)
 
 	resp := &model.DashboardResponse{}
 	if weeklyErr == nil && weekly != nil {
@@ -48,6 +53,49 @@ func (s *service) GetDashboardData(ctx context.Context, request model.MoodTrendR
 	if monthlyErr == nil && monthly != nil {
 		resp.MonthlyTopMoods = monthly.Data
 	}
+	resp.Streak = streak
 
 	return resp, nil
+}
+
+func (s *service) recordActivity(ctx context.Context, userID string) {
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
+	yesterday := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC).Unix()
+
+	if err := s.activityRepo.UpsertDailyActivity(ctx, userID, today); err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{"userId": userID})
+		return
+	}
+
+	streak, err := s.activityRepo.GetStreak(ctx, userID)
+	if err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{"userId": userID})
+		return
+	}
+
+	if streak != nil && streak.LastActiveDate == today {
+		return
+	}
+
+	newCurrent := 1
+	newLongest := 1
+	if streak != nil {
+		newLongest = streak.LongestStreak
+		if streak.LastActiveDate == yesterday {
+			newCurrent = streak.CurrentStreak + 1
+		}
+		if newCurrent > newLongest {
+			newLongest = newCurrent
+		}
+	}
+
+	if err := s.activityRepo.SaveStreak(ctx, activityModel.Streak{
+		UserID:         userID,
+		CurrentStreak:  newCurrent,
+		LongestStreak:  newLongest,
+		LastActiveDate: today,
+	}); err != nil {
+		logger.Error(appError.DBQueryFailed.Message, err, appError.DBQueryFailed, logger.Fields{"userId": userID})
+	}
 }

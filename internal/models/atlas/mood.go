@@ -3,6 +3,7 @@ package atlas
 import (
 	"time"
 
+	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
 )
 
@@ -37,6 +38,7 @@ type MoodTop3Response struct {
 }
 
 type DashboardResponse struct {
-	WeeklyMoodStrip map[string]*mood.Type `json:"weeklyMoodStrip"`
-	MonthlyTopMoods []MoodPercentage      `json:"monthlyTopMoods"`
+	WeeklyMoodStrip map[string]*mood.Type         `json:"weeklyMoodStrip"`
+	MonthlyTopMoods []MoodPercentage              `json:"monthlyTopMoods"`
+	Streak          *activityModel.StreakResponse `json:"streak"`
 }

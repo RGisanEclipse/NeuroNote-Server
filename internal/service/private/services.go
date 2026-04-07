@@ -2,6 +2,7 @@ package private
 
 import (
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
+	activityRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/activity"
 	moodRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/mood"
 	onboardingRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/onboarding"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
@@ -30,6 +31,7 @@ func New() *Services {
 	userrepo := user.NewUserRepo(dbConn)
 	onboardingrepo := onboardingRepo.NewOBDetailsRepository(dbConn)
 	moodrepo := moodRepo.NewMoodRepository(dbConn)
+	activityrepo := activityRepo.NewActivityRepository(dbConn)
 
 	phoenixClient := phoenixservice.NewBrevoClient()
 	phoenixService := phoenixservice.New(userrepo, phoenixClient)
@@ -37,8 +39,8 @@ func New() *Services {
 	otpService := otp.New(userrepo, redisRepo, phoenixService)
 	onboardingService := onboarding.NewService(userrepo, onboardingrepo)
 	moodService := mood.NewService(moodrepo)
-	novaService := nova.NewService(moodrepo)
-	atlasService := atlas.NewService(novaService)
+	novaService := nova.NewService(moodrepo, activityrepo)
+	atlasService := atlas.NewService(novaService, activityrepo)
 
 	return &Services{
 		OTP:        otpService,

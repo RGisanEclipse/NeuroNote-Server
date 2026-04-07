@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
 	"gorm.io/driver/postgres"
@@ -40,6 +41,8 @@ func Init() error {
 			&user.Model{},
 			&onboarding.Model{},
 			&mood.Entry{},
+			&activity.DailyEntry{},
+			&activity.Streak{},
 		); err != nil {
 			return
 		}

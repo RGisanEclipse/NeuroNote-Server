@@ -4,17 +4,20 @@ import (
 	"context"
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	activityRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/activity"
 	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/nova"
 )
 
 type service struct {
-	nova nova.Service
+	nova         nova.Service
+	activityRepo activityRepo.Repository
 }
 
-func NewService(novaService nova.Service) Service {
+func NewService(novaService nova.Service, activityRepository activityRepo.Repository) Service {
 	return &service{
-		nova: novaService,
+		nova:         novaService,
+		activityRepo: activityRepository,
 	}
 }
 
