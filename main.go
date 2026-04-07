@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,8 +37,7 @@ func main() {
 	}
 
 	// Redis Initialization
-	redis.InitRedis()
-	if err := redis.Client.Ping(context.Background()).Err(); err != nil {
+	if err := redis.InitRedis(); err != nil {
 		logger.Error(error.RedisConnectionFailed.Message, err, error.RedisConnectionFailed)
 		os.Exit(1)
 	}
@@ -52,7 +52,7 @@ func main() {
 	// Health check endpoint
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	}).Methods("GET")
 
 	// Register publicRouter routes with the handler
@@ -95,7 +95,7 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServeTLS("/certs/localhost.pem", "/certs/localhost-key.pem"); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		logger.Error(error.ServerInternalError.Message, err, error.ServerInternalError)
 	}
 
