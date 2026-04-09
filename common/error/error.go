@@ -124,6 +124,13 @@ const (
 	otpCodeMissing       = "OTP_006"
 )
 
+// Sync errors (sync*)
+const (
+	syncUnknownType             = "SYNC_001"
+	syncOperationLimitExceeded  = "SYNC_002"
+	syncInvalidPayload          = "SYNC_003"
+)
+
 // Phoenix/Email service errors (phoenix*)
 const (
 	phoenixEmailDeliveryFailed = "PHOENIX_001"
@@ -216,6 +223,10 @@ var (
 	OtpInvalid           = NewErrorCode(otpInvalid, "invalid OTP", http.StatusBadRequest)
 	OtpInvalidPurpose    = NewErrorCode(otpInvalidPurpose, "invalid OTP purpose", http.StatusBadRequest)
 	OtpCodeMissing       = NewErrorCode(otpCodeMissing, "OTP code is required", http.StatusBadRequest)
+
+	SyncUnknownType            = NewErrorCode(syncUnknownType, "unknown operation type", http.StatusBadRequest)
+	SyncOperationLimitExceeded = NewErrorCode(syncOperationLimitExceeded, "operation limit exceeded", http.StatusBadRequest)
+	SyncInvalidPayload         = NewErrorCode(syncInvalidPayload, "invalid operation payload", http.StatusBadRequest)
 
 	PhoenixEmailDeliveryFailed = NewErrorCode(phoenixEmailDeliveryFailed, "failed to deliver email", http.StatusInternalServerError)
 

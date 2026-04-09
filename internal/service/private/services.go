@@ -40,7 +40,7 @@ func New() *Services {
 	onboardingService := onboarding.NewService(userrepo, onboardingrepo)
 	moodService := mood.NewService(moodrepo)
 	novaService := nova.NewService(moodrepo, activityrepo)
-	atlasService := atlas.NewService(novaService, activityrepo)
+	atlasService := atlas.NewService(novaService, activityrepo, moodService)
 
 	return &Services{
 		OTP:        otpService,
