@@ -172,6 +172,38 @@ func TestService_LogMood(t *testing.T) {
 			expectedResult: false,
 			expectedError:  appError.ServerInternalError,
 		},
+		{
+			name:   "Success_WithOfflineTimestamp",
+			userId: "user1234567890",
+			request: mood.Request{
+				Mood:      "happy",
+				Reason:    "achievement",
+				Timestamp: 1700000000,
+			},
+			mockSetup: func(moodRepo *mocks.MockMoodRepo) {
+				moodRepo.On("SaveMood", mock.Anything, mock.MatchedBy(func(e mood.Entry) bool {
+					return e.CreatedAt == 1700000000
+				})).Return(nil)
+			},
+			expectedResult: true,
+			expectedError:  mocks.NoError(),
+		},
+		{
+			name:   "Success_ZeroTimestampUsesServerTime",
+			userId: "user1234567890",
+			request: mood.Request{
+				Mood:      "happy",
+				Timestamp: 0,
+			},
+			mockSetup: func(moodRepo *mocks.MockMoodRepo) {
+				moodRepo.On("SaveMood", mock.Anything, mock.MatchedBy(func(e mood.Entry) bool {
+					// CreatedAt 0 means GORM auto-fills — entry arrives with 0, not set by service
+					return e.CreatedAt == 0
+				})).Return(nil)
+			},
+			expectedResult: true,
+			expectedError:  mocks.NoError(),
+		},
 	}
 
 	for _, tt := range tests {

@@ -35,10 +35,11 @@ func (s *service) LogMood(ctx context.Context, userId string, request model.Requ
 	}
 
 	entry := model.Entry{
-		ID:     uuid.New().String(),
-		UserID: userId,
-		Mood:   model.Type(mood),
-		Reason: reasonPtr,
+		ID:        uuid.New().String(),
+		UserID:    userId,
+		Mood:      model.Type(mood),
+		Reason:    reasonPtr,
+		CreatedAt: request.Timestamp, // 0 means GORM auto-fills with server time
 	}
 
 	err := s.moodRepo.SaveMood(ctx, entry)

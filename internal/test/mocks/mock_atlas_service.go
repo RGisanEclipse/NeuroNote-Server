@@ -5,6 +5,7 @@ import (
 
 	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
 	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
+	syncModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/sync"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -44,4 +45,12 @@ func (m *MockAtlasService) GetDashboardData(ctx context.Context, request atlas.M
 		return nil, err
 	}
 	return args.Get(0).(*atlas.DashboardResponse), nil
+}
+
+func (m *MockAtlasService) BulkSync(ctx context.Context, userID string, req syncModel.SyncRequest) *syncModel.SyncResponse {
+	args := m.Called(ctx, userID, req)
+	if args.Get(0) == nil {
+		return nil
+	}
+	return args.Get(0).(*syncModel.SyncResponse)
 }
