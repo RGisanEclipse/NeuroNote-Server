@@ -3,10 +3,10 @@ package nova
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	activityModel "github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/atlas"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 )
 
 // MoodReader defines the dependency required to read mood entries.

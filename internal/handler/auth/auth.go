@@ -9,12 +9,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
-	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/common/response"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	authmodel "github.com/RGisanEclipse/AVYO-Server/internal/models/auth"
+	authservice "github.com/RGisanEclipse/AVYO-Server/internal/service/public/auth"
 )
 
 // setRefreshTokenCookie sets a refresh token cookie with secure settings

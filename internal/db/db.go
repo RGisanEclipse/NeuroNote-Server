@@ -5,15 +5,15 @@ import (
 	"os"
 	"sync"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/common"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/user"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/common"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/user"
 )
 
 // Init connects to Postgres and runs migrations.

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/phoenix"
 	"github.com/sirupsen/logrus"
 )
 

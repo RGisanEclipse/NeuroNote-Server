@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
+	om "github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
 	"github.com/stretchr/testify/mock"
 )
 

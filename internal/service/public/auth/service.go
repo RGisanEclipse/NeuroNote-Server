@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	onboardingRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/onboarding"
-	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
-	otpService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	onboardingRepo "github.com/RGisanEclipse/AVYO-Server/internal/db/onboarding"
+	redisrepo "github.com/RGisanEclipse/AVYO-Server/internal/db/redis"
+	userrepo "github.com/RGisanEclipse/AVYO-Server/internal/db/user"
+	authModels "github.com/RGisanEclipse/AVYO-Server/internal/models/auth"
+	otpService "github.com/RGisanEclipse/AVYO-Server/internal/service/private/otp"
 )
 
 // Service is the concrete implementation that powers all auth flows.

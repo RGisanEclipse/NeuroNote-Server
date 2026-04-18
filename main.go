@@ -11,16 +11,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/handler"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/auth"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/rate"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public"
+	"github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/redis"
+	"github.com/RGisanEclipse/AVYO-Server/internal/handler"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/auth"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/rate"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/private"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/public"
 )
 
 func main() {
@@ -76,7 +76,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	logger.Info("NeuroNote-Server listening on :" + port)
+	logger.Info("AVYO-Server listening on :" + port)
 
 	// Shut-Down Handling
 	// This will gracefully shutdown the server on interrupt signal

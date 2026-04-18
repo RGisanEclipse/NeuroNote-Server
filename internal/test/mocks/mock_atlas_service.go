@@ -3,9 +3,9 @@ package mocks
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
-	syncModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/sync"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/atlas"
+	syncModel "github.com/RGisanEclipse/AVYO-Server/internal/models/sync"
 	"github.com/stretchr/testify/mock"
 )
 

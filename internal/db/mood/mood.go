@@ -3,7 +3,7 @@ package mood
 import (
 	"context"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 	"gorm.io/gorm"
 )
 

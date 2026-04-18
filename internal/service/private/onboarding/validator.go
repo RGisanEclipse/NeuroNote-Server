@@ -1,8 +1,8 @@
 package onboarding
 
 import (
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	om "github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
 )
 
 // ValidateOnboardingData validates user onboarding input.

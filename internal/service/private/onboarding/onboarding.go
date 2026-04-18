@@ -3,10 +3,10 @@ package onboarding
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	om "github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
 )
 
 // OnboardUser returns success and an error and onboards the user into onboarding.details db

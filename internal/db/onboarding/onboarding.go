@@ -3,7 +3,7 @@ package onboarding
 import (
 	"context"
 
-	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
+	om "github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
 	"gorm.io/gorm"
 )
 

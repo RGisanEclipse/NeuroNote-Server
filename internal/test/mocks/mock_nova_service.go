@@ -3,9 +3,9 @@ package mocks
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	activityModel "github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/atlas"
 )
 
 // NovaTopCall captures a single call made to GetTopMoods.

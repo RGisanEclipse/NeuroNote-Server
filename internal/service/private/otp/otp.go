@@ -5,14 +5,14 @@ import (
 	"errors"
 	"time"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	redisrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	otpTemplates "github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix/templates/otp"
-	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
-	otpUtils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/otp"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	redisrepo "github.com/RGisanEclipse/AVYO-Server/internal/db/redis"
+	userrepo "github.com/RGisanEclipse/AVYO-Server/internal/db/user"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	otpTemplates "github.com/RGisanEclipse/AVYO-Server/internal/models/phoenix/templates/otp"
+	phoenixservice "github.com/RGisanEclipse/AVYO-Server/internal/service/private/phoenix"
+	otpUtils "github.com/RGisanEclipse/AVYO-Server/internal/utils/otp"
 )
 
 type Service struct {

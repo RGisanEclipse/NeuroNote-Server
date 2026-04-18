@@ -3,12 +3,12 @@ package handler
 import (
 	"github.com/gorilla/mux"
 
-	atlasHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/atlas"
-	authHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/auth"
-	moodHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/mood"
-	onboardingHandler "github.com/RGisanEclipse/NeuroNote-Server/internal/handler/onboarding"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public"
+	atlasHandler "github.com/RGisanEclipse/AVYO-Server/internal/handler/atlas"
+	authHandler "github.com/RGisanEclipse/AVYO-Server/internal/handler/auth"
+	moodHandler "github.com/RGisanEclipse/AVYO-Server/internal/handler/mood"
+	onboardingHandler "github.com/RGisanEclipse/AVYO-Server/internal/handler/onboarding"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/private"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/public"
 )
 
 // RegisterPublicRoutes registers all public routes for the application

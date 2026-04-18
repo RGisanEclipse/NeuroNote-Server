@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
+	activityModel "github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
 )
 
 // MockActivityRepo is an in-memory implementation of activity.Repository and nova.ActivityReader.

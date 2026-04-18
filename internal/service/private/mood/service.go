@@ -3,9 +3,9 @@ package mood
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	moodRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/mood"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	moodRepo "github.com/RGisanEclipse/AVYO-Server/internal/db/mood"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 )
 
 type Service interface {

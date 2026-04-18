@@ -49,7 +49,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t neuronote-server .
+          docker build -t avyo-server .
 
       - name: Create Docker network
         run: |
@@ -85,12 +85,12 @@ jobs:
       - name: Run server container and wait for health
         run: |
           docker run -d \
-            --name neuronote-app \
+            --name avyo-app \
             --network build-and-run_github_network \
             -v $PWD/certs:/app/certs:ro \
             -p 8443:8443 \
             --env-file .env \
-            neuronote-server
+            avyo-server
 
           echo "Waiting for app health check on https://localhost:8443/health ..."
 
@@ -105,12 +105,12 @@ jobs:
 
           echo "App health check failed after multiple attempts."
           echo "==== Container logs ===="
-          docker logs neuronote-app
+          docker logs avyo-app
           exit 1
 
       - name: Cleanup
         if: always()
         run: |
-          docker stop neuronote-app postgres redis || true
-          docker rm neuronote-app postgres redis || true
+          docker stop avyo-app postgres redis || true
+          docker rm avyo-app postgres redis || true
           docker network rm build-and-run_github_network || true

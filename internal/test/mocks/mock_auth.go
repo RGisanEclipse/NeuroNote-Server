@@ -3,8 +3,8 @@ package mocks
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	authmodel "github.com/RGisanEclipse/AVYO-Server/internal/models/auth"
 	"github.com/stretchr/testify/mock"
 )
 

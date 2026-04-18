@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	activityRepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/activity"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
-	syncModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/sync"
-	moodService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/mood"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/nova"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	activityRepo "github.com/RGisanEclipse/AVYO-Server/internal/db/activity"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/atlas"
+	syncModel "github.com/RGisanEclipse/AVYO-Server/internal/models/sync"
+	moodService "github.com/RGisanEclipse/AVYO-Server/internal/service/private/mood"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/private/nova"
 )
 
 const MaxSyncOperations = 500

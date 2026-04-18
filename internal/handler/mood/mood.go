@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/response"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
-	moodService "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/mood"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/common/response"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/user"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
+	moodService "github.com/RGisanEclipse/AVYO-Server/internal/service/private/mood"
 	"github.com/gorilla/mux"
 )
 

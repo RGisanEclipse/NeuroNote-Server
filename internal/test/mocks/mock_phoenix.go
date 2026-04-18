@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/phoenix"
 	"github.com/stretchr/testify/mock"
 )
 

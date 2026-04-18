@@ -3,11 +3,11 @@ package auth
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	requestMiddleware "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	authModels "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
-	authutils "github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	requestMiddleware "github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	authModels "github.com/RGisanEclipse/AVYO-Server/internal/models/auth"
+	authutils "github.com/RGisanEclipse/AVYO-Server/internal/utils/auth"
 )
 
 // Signup registers a new user and returns a JWT token.

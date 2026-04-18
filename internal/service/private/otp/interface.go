@@ -3,7 +3,7 @@ package otp
 import (
 	"context"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
 )
 
 type S interface {

@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	authmodel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/auth"
-	authservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	authmodel "github.com/RGisanEclipse/AVYO-Server/internal/models/auth"
+	authservice "github.com/RGisanEclipse/AVYO-Server/internal/service/public/auth"
+	"github.com/RGisanEclipse/AVYO-Server/internal/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

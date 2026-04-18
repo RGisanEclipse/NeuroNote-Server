@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/utils/auth"
+	"github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/user"
+	"github.com/RGisanEclipse/AVYO-Server/internal/utils/auth"
 	"github.com/sirupsen/logrus"
 )
 

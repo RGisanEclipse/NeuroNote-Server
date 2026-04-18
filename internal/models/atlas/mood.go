@@ -3,8 +3,8 @@ package atlas
 import (
 	"time"
 
-	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	activityModel "github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 )
 
 type MoodAggregate struct {

@@ -1,13 +1,13 @@
 package public
 
 import (
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/onboarding"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/redis"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	otpservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/otp"
-	phoenixservice "github.com/RGisanEclipse/NeuroNote-Server/internal/service/private/phoenix"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/service/public/auth"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/onboarding"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/redis"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/user"
+	otpservice "github.com/RGisanEclipse/AVYO-Server/internal/service/private/otp"
+	phoenixservice "github.com/RGisanEclipse/AVYO-Server/internal/service/private/phoenix"
+	"github.com/RGisanEclipse/AVYO-Server/internal/service/public/auth"
 )
 
 type Services struct {

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	requestMiddleWare "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	requestMiddleWare "github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 	"github.com/google/uuid"
 )
 

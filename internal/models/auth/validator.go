@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
 )
 
 var (

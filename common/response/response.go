@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	apperror "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	apperror "github.com/RGisanEclipse/AVYO-Server/common/error"
 )
 
 // Response represents a successful API response

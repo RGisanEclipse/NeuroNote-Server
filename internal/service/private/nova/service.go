@@ -5,12 +5,12 @@ import (
 	"sort"
 	"time"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/common/logger"
-	requestMiddleWare "github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/request"
-	activityModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/activity"
-	model "github.com/RGisanEclipse/NeuroNote-Server/internal/models/atlas"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/mood"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/common/logger"
+	requestMiddleWare "github.com/RGisanEclipse/AVYO-Server/internal/middleware/request"
+	activityModel "github.com/RGisanEclipse/AVYO-Server/internal/models/activity"
+	model "github.com/RGisanEclipse/AVYO-Server/internal/models/atlas"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/mood"
 )
 
 // getEntriesForRange fetches and filters mood entries for the requested time range,

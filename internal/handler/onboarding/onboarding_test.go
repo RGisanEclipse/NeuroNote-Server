@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/middleware/user"
-	om "github.com/RGisanEclipse/NeuroNote-Server/internal/models/onboarding"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	"github.com/RGisanEclipse/AVYO-Server/internal/middleware/user"
+	om "github.com/RGisanEclipse/AVYO-Server/internal/models/onboarding"
+	"github.com/RGisanEclipse/AVYO-Server/internal/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

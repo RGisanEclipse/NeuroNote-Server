@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	apperror "github.com/RGisanEclipse/NeuroNote-Server/common/error"
+	apperror "github.com/RGisanEclipse/AVYO-Server/common/error"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +35,7 @@ func init() {
 	if lokiURL != "" {
 		hook := &LokiHook{
 			URL:       lokiURL,
-			Labels:    map[string]string{"app": "neuronote-server", "env": "dev"},
+			Labels:    map[string]string{"app": "avyo-server", "env": "dev"},
 			BatchWait: 1 * time.Second,
 			BatchSize: 100,
 		}

@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/user"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/user"
 	"gorm.io/gorm"
 )
 

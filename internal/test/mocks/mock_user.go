@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 
-	userrepo "github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
+	userrepo "github.com/RGisanEclipse/AVYO-Server/internal/db/user"
 	"github.com/stretchr/testify/mock"
 )
 

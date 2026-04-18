@@ -3,8 +3,8 @@ package phoenix
 import (
 	"context"
 
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/db/user"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/models/phoenix"
+	"github.com/RGisanEclipse/AVYO-Server/internal/db/user"
+	"github.com/RGisanEclipse/AVYO-Server/internal/models/phoenix"
 )
 
 type Service interface {

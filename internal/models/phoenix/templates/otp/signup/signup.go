@@ -399,7 +399,7 @@ var BodyHTML = `
                                     Stay awesome,
                                   </p>
                                   <p style="line-height: 140%; margin: 0px">
-                                    Team NeuroNote
+                                    Team AVYO
                                   </p>
                                 </div>
                               </td>

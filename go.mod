@@ -1,4 +1,4 @@
-module github.com/RGisanEclipse/NeuroNote-Server
+module github.com/RGisanEclipse/AVYO-Server
 
 go 1.24.4
 

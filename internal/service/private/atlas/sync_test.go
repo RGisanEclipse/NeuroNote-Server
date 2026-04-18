@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	appError "github.com/RGisanEclipse/NeuroNote-Server/common/error"
-	syncModel "github.com/RGisanEclipse/NeuroNote-Server/internal/models/sync"
-	"github.com/RGisanEclipse/NeuroNote-Server/internal/test/mocks"
+	appError "github.com/RGisanEclipse/AVYO-Server/common/error"
+	syncModel "github.com/RGisanEclipse/AVYO-Server/internal/models/sync"
+	"github.com/RGisanEclipse/AVYO-Server/internal/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
